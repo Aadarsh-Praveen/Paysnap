@@ -1,0 +1,59 @@
+{
+    "state_code": "NY",
+    "state_name_en": "New York",
+    "state_name_es": "Nueva York",
+    "last_verified": "2025-01-01",
+    "source_url": "https://dol.ny.gov/minimum-wage-0",
+    "wages": {
+      "minimum_wage": 16.00,
+      "minimum_wage_nyc": 16.50,
+      "minimum_wage_source": "NY minimum wage effective January 1, 2025",
+      "minimum_wage_statute": "NY Labor Law §652",
+      "tipped_minimum": 10.65,
+      "note_es": "Nueva York: $16.00/hora mínimo (2025). NYC: $16.50/hora."
+    },
+    "overtime": {
+      "weekly_threshold": 40,
+      "daily_threshold": null,
+      "multiplier_standard": 1.5,
+      "multiplier_double": null,
+      "statute": "NY Labor Law §160",
+      "note_es": "Nueva York: más de 40 horas por semana = 1.5x tu tarifa normal."
+    },
+    "paystub": {
+      "itemized_required": true,
+      "required_fields": ["rate_of_pay", "basis_of_pay", "net_wages", "deductions", "employer_name"],
+      "statute": "NY Labor Law §195",
+      "penalty_per_violation": 250,
+      "note_es": "Nueva York requiere recibos detallados. Multa de $250 por violación."
+    },
+    "deductions": {
+      "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
+      "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
+      "never_allowed": ["tools", "uniforms", "business_expenses"],
+      "statute": "NY Labor Law §193",
+      "note_es": "En Nueva York, deducciones por herramientas o uniformes son ilegales."
+    },
+    "legal_aid": [
+      {
+        "name": "Make the Road New York",
+        "name_es": "Make the Road Nueva York",
+        "phone": "718-565-8500",
+        "phone_note_es": "Gratis, servicio en español",
+        "url": "https://maketheroadny.org",
+        "serves_undocumented": true,
+        "coverage": "New York City"
+      },
+      {
+        "name": "NY Department of Labor",
+        "name_es": "Departamento de Trabajo de NY",
+        "phone": "1-888-469-7365",
+        "phone_note_es": "Gratis, servicio en español",
+        "url": "https://dol.ny.gov",
+        "serves_undocumented": true,
+        "coverage": "All of New York"
+      }
+    ],
+    "worker_rights_summary_es": "En Nueva York, tienes derecho a $16.00/hora mínimo y 1.5x tu tarifa después de 40 horas semanales.",
+    "worker_rights_summary_en": "In New York, you have the right to $16.00/hour minimum and 1.5x overtime after 40 hours/week."
+  }

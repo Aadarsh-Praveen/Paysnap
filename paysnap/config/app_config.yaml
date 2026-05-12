@@ -1,0 +1,64 @@
+app:
+  name: "PaySnap"
+  tagline_es: "Tu recibo. Tu derecho. En tu teléfono."
+  tagline_en: "Your paystub. Your rights. On your phone."
+  version: "1.0.0"
+  default_language: "es"
+
+supported_states:
+  - code: "CA"
+    name_en: "California"
+    name_es: "California"
+  - code: "TX"
+    name_en: "Texas"
+    name_es: "Texas"
+  - code: "NY"
+    name_en: "New York"
+    name_es: "Nueva York"
+  - code: "FL"
+    name_en: "Florida"
+    name_es: "Florida"
+  - code: "IL"
+    name_en: "Illinois"
+    name_es: "Illinois"
+
+input:
+  accepted_image_types: [".jpg", ".jpeg", ".png", ".webp"]
+  accepted_document_types: [".pdf", ".docx", ".xlsx"]
+  max_file_size_mb: 20
+  ocr_confidence_threshold: 0.75
+
+model_routing:
+  use_vision_for: ["image", "screenshot"]
+  use_text_for: ["pdf_extracted", "doc_extracted", "followup_question"]
+  confidence_fallback_threshold: 0.70
+
+ollama:
+  base_url: "http://localhost:11434"
+  vision_model: "gemma4:latest"
+  text_model: "gemma4:latest"
+  timeout_seconds: 60
+  max_tokens: 2048
+
+ui:
+  port: 7860
+  share: false
+  show_api: false
+  theme: "soft"
+
+disclaimer:
+  show_on_first_launch: true
+  must_accept: true
+  text_es: |
+    PaySnap te ayuda a entender tu recibo de pago.
+    No es consejo legal. Todos los resultados deben
+    discutirse con una oficina de Salarios y Horas
+    o un abogado antes de tomar acción.
+  text_en: |
+    PaySnap helps you understand your paystub.
+    It is not legal advice. All results should be
+    discussed with a Wage and Hour office or attorney
+    before taking action.
+
+security:
+  vault_filename: "paysnap_vault.enc"
