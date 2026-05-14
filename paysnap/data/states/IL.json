@@ -1,58 +1,62 @@
 {
-    "state_code": "IL",
-    "state_name_en": "Illinois",
-    "state_name_es": "Illinois",
-    "last_verified": "2025-01-01",
-    "source_url": "https://labor.illinois.gov/labor-laws/minimum-wage-law",
-    "wages": {
-      "minimum_wage": 14.00,
-      "minimum_wage_chicago": 16.20,
-      "minimum_wage_source": "Illinois minimum wage effective January 1, 2025",
-      "minimum_wage_statute": "820 ILCS 105/4",
-      "tipped_minimum": 8.40,
-      "note_es": "Illinois: $14.00/hora mínimo (2025). Chicago: $16.20/hora."
+  "state_code": "IL",
+  "state_name_en": "Illinois",
+  "state_name_es": "Illinois",
+  "last_verified": "2025-01-01",
+  "source_url": "https://labor.illinois.gov/labor-laws/minimum-wage-law",
+  "wages": {
+    "minimum_wage": 14.00,
+    "minimum_wage_chicago": 16.20,
+    "minimum_wage_source": "Illinois minimum wage effective January 1, 2025",
+    "minimum_wage_statute": "820 ILCS 105/4",
+    "tipped_minimum": 8.40,
+    "note_es": "Illinois: $14.00/hora mínimo (2025). Chicago: $16.20/hora."
+  },
+  "overtime": {
+    "weekly_threshold": 40,
+    "daily_threshold": null,
+    "multiplier_standard": 1.5,
+    "multiplier_double": null,
+    "statute": "820 ILCS 105/4a",
+    "note_es": "Illinois: más de 40 horas por semana = 1.5x tu tarifa normal."
+  },
+  "paystub": {
+    "itemized_required": true,
+    "required_fields": ["hours_worked", "wages_paid", "deductions"],
+    "statute": "820 ILCS 115/10",
+    "note_es": "Illinois requiere recibos con horas trabajadas, salario y deducciones."
+  },
+  "deductions": {
+    "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
+    "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
+    "never_allowed": ["tools", "uniforms", "cash_register_shortages", "breakage"],
+    "statute": "820 ILCS 115/9",
+    "note_es": "En Illinois, deducciones por herramientas, uniformes o roturas son ilegales."
+  },
+  "legal_aid": [
+    {
+      "name": "Legal Aid Chicago",
+      "name_en": "Legal Aid Chicago",
+      "name_es": "Ayuda Legal Chicago",
+      "phone": "312-341-1070",
+      "phone_note_en": "Free, Spanish service available",
+      "phone_note_es": "Gratis, servicio en español",
+      "url": "https://legalaidchicago.org",
+      "serves_undocumented": true,
+      "coverage": "Chicago and Cook County"
     },
-    "overtime": {
-      "weekly_threshold": 40,
-      "daily_threshold": null,
-      "multiplier_standard": 1.5,
-      "multiplier_double": null,
-      "statute": "820 ILCS 105/4a",
-      "note_es": "Illinois: más de 40 horas por semana = 1.5x tu tarifa normal."
-    },
-    "paystub": {
-      "itemized_required": true,
-      "required_fields": ["hours_worked", "wages_paid", "deductions"],
-      "statute": "820 ILCS 115/10",
-      "note_es": "Illinois requiere recibos con horas trabajadas, salario y deducciones."
-    },
-    "deductions": {
-      "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
-      "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
-      "never_allowed": ["tools", "uniforms", "cash_register_shortages", "breakage"],
-      "statute": "820 ILCS 115/9",
-      "note_es": "En Illinois, deducciones por herramientas, uniformes o roturas son ilegales."
-    },
-    "legal_aid": [
-      {
-        "name": "Legal Aid Chicago",
-        "name_es": "Ayuda Legal Chicago",
-        "phone": "312-341-1070",
-        "phone_note_es": "Gratis, servicio en español",
-        "url": "https://legalaidchicago.org",
-        "serves_undocumented": true,
-        "coverage": "Chicago and Cook County"
-      },
-      {
-        "name": "Illinois Department of Labor",
-        "name_es": "Departamento de Trabajo de Illinois",
-        "phone": "312-793-2800",
-        "phone_note_es": "Servicio en español disponible",
-        "url": "https://labor.illinois.gov",
-        "serves_undocumented": true,
-        "coverage": "All of Illinois"
-      }
-    ],
-    "worker_rights_summary_es": "En Illinois, tienes derecho a $14.00/hora mínimo y 1.5x tu tarifa después de 40 horas semanales. Las deducciones por herramientas son ilegales.",
-    "worker_rights_summary_en": "In Illinois, you have the right to $14.00/hour minimum and 1.5x overtime after 40 hours/week. Tool deductions are illegal."
-  }
+    {
+      "name": "Illinois Department of Labor",
+      "name_en": "Illinois Department of Labor",
+      "name_es": "Departamento de Trabajo de Illinois",
+      "phone": "312-793-2800",
+      "phone_note_en": "Free, Spanish service available",
+      "phone_note_es": "Servicio en español disponible",
+      "url": "https://labor.illinois.gov",
+      "serves_undocumented": true,
+      "coverage": "All of Illinois"
+    }
+  ],
+  "worker_rights_summary_es": "En Illinois, tienes derecho a $14.00/hora mínimo y 1.5x tu tarifa después de 40 horas semanales. Las deducciones por herramientas son ilegales.",
+  "worker_rights_summary_en": "In Illinois, you have the right to $14.00/hour minimum and 1.5x overtime after 40 hours/week. Tool deductions are illegal."
+}

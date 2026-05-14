@@ -1,6 +1,7 @@
 """
 deduction_checker.py
 Deterministic deduction legality. Zero LLM.
+All strings in English — translation handled by backend layer.
 """
 
 import sqlite3
@@ -20,9 +21,9 @@ class DeductionCheckResult:
     requires_written_consent: bool
     drops_below_minimum_wage: bool
     statute: str
-    reason_es: str
-    reason_en: str
-    severity: str  # "illegal", "suspicious", "ok"
+    reason_es: str   # kept for backward compatibility — now always English
+    reason_en: str   # canonical English reason
+    severity: str    # "illegal", "suspicious", "ok"
 
 
 class DeductionChecker:
@@ -57,51 +58,107 @@ class DeductionChecker:
     def check_single(self, deduction, hourly_rate, hours_worked, gross_pay, state):
         category = self._categorize(deduction.name)
         min_wage = self._get_min_wage(state)
+        rule = self._get_rule(state, category)
 
-        effective = (gross_pay - deduction.amount) / hours_worked if hours_worked > 0 else 0
-        drops_below = effective < min_wage
+        # ─────────────────────────────────────────
+        # CHECK 3 RUNS FIRST AND ALWAYS
+        # Minimum wage check is independent of
+        # deduction type — runs no matter what
+        # ─────────────────────────────────────────
+        drops_below = False
+        effective_hourly = 0.0
+
+        if hours_worked > 0 and gross_pay > 0:
+            effective_hourly = (gross_pay - deduction.amount) / hours_worked
+            drops_below = effective_hourly < min_wage
 
         if drops_below:
+            reason = (
+                f"This ${deduction.amount:.2f} deduction "
+                f"reduces your effective pay to "
+                f"${effective_hourly:.2f}/hr. "
+                f"Minimum wage in {state} is ${min_wage:.2f}/hr. "
+                f"This is ILLEGAL under federal law "
+                f"regardless of deduction type."
+            )
             return DeductionCheckResult(
-                deduction=deduction, is_legal=False, is_suspicious=False,
-                requires_written_consent=False, drops_below_minimum_wage=True,
-                statute=f"FLSA 29 USC 203(m)",
-                reason_es=(f"Esta deducción de ${deduction.amount:.2f} baja tu pago a "
-                           f"${effective:.2f}/hora, por debajo del mínimo de ${min_wage:.2f}/hora. ILEGAL."),
-                reason_en=(f"This ${deduction.amount:.2f} deduction reduces pay to "
-                           f"${effective:.2f}/hr, below ${min_wage:.2f}/hr minimum. ILLEGAL."),
+                deduction=deduction,
+                is_legal=False,
+                is_suspicious=False,
+                requires_written_consent=False,
+                drops_below_minimum_wage=True,
+                statute="FLSA 29 USC 203(m)",
+                reason_es=reason,
+                reason_en=reason,
                 severity="illegal"
             )
 
-        rule = self._get_rule(state, category)
-        if rule:
-            if not rule["is_allowed"]:
-                return DeductionCheckResult(
-                    deduction=deduction, is_legal=False, is_suspicious=False,
-                    requires_written_consent=False, drops_below_minimum_wage=False,
-                    statute=rule["statute"] or "State labor law",
-                    reason_es=f"La deducción '{deduction.name}' es ILEGAL en {state} según {rule['statute']}.",
-                    reason_en=f"Deduction '{deduction.name}' is ILLEGAL in {state} under {rule['statute']}.",
-                    severity="illegal"
-                )
-            if rule["requires_written_consent"]:
-                return DeductionCheckResult(
-                    deduction=deduction, is_legal=True, is_suspicious=True,
-                    requires_written_consent=True, drops_below_minimum_wage=False,
-                    statute=rule["statute"] or "State labor law",
-                    reason_es=f"La deducción '{deduction.name}' requiere consentimiento por escrito. ¿Firmaste un acuerdo?",
-                    reason_en=f"Deduction '{deduction.name}' requires written consent. Did you sign an agreement?",
-                    severity="suspicious"
-                )
+        # ─────────────────────────────────────────
+        # CHECK 1: Is deduction TYPE illegal
+        # in this state regardless of wage?
+        # ─────────────────────────────────────────
+        if rule and not rule["is_allowed"]:
+            reason = (
+                f"'{deduction.name}' deduction is ILLEGAL "
+                f"in {state} regardless of wage level. "
+                f"Under {rule['statute']}, employers cannot "
+                f"make this deduction."
+            )
+            return DeductionCheckResult(
+                deduction=deduction,
+                is_legal=False,
+                is_suspicious=False,
+                requires_written_consent=False,
+                drops_below_minimum_wage=False,
+                statute=rule["statute"] or "State labor law",
+                reason_es=reason,
+                reason_en=reason,
+                severity="illegal"
+            )
+
+        # ─────────────────────────────────────────
+        # CHECK 2: Requires written consent?
+        # Only reaches here if not below min wage
+        # and not categorically illegal
+        # ─────────────────────────────────────────
+        if rule and rule["requires_written_consent"]:
+            reason = (
+                f"'{deduction.name}' requires your written "
+                f"consent. If you did not sign an agreement, "
+                f"it may be illegal."
+            )
+            return DeductionCheckResult(
+                deduction=deduction,
+                is_legal=True,
+                is_suspicious=True,
+                requires_written_consent=True,
+                drops_below_minimum_wage=False,
+                statute=rule["statute"] or "State labor law",
+                reason_es=reason,
+                reason_en=reason,
+                severity="suspicious"
+            )
+
+        # ─────────────────────────────────────────
+        # No violation found
+        # ─────────────────────────────────────────
+        if category != "unknown":
+            reason = "No issue detected with this deduction."
+        else:
+            reason = (
+                f"Could not identify '{deduction.name}'. "
+                f"Verify with a labor attorney."
+            )
 
         return DeductionCheckResult(
-            deduction=deduction, is_legal=True, is_suspicious=(category == "unknown"),
-            requires_written_consent=False, drops_below_minimum_wage=False,
+            deduction=deduction,
+            is_legal=True,
+            is_suspicious=(category == "unknown"),
+            requires_written_consent=False,
+            drops_below_minimum_wage=False,
             statute="FLSA",
-            reason_es="No detectamos un problema con esta deducción." if category != "unknown"
-                      else f"No reconocemos '{deduction.name}'. Verifica con un abogado.",
-            reason_en="No issue detected." if category != "unknown"
-                      else f"Could not identify '{deduction.name}'. Verify with an attorney.",
+            reason_es=reason,
+            reason_en=reason,
             severity="ok" if category != "unknown" else "suspicious"
         )
 
@@ -115,7 +172,10 @@ class DeductionChecker:
     def _get_min_wage(self, state: str) -> float:
         try:
             conn = self._get_db()
-            row = conn.execute("SELECT minimum_wage FROM state_rules WHERE state_code=?", (state,)).fetchone()
+            row = conn.execute(
+                "SELECT minimum_wage FROM state_rules WHERE state_code=?",
+                (state,)
+            ).fetchone()
             conn.close()
             return row["minimum_wage"] if row else 7.25
         except:

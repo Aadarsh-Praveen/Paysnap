@@ -1,57 +1,61 @@
 {
-    "state_code": "FL",
-    "state_name_en": "Florida",
-    "state_name_es": "Florida",
-    "last_verified": "2025-01-01",
-    "source_url": "https://floridajobs.org",
-    "wages": {
-      "minimum_wage": 13.00,
-      "minimum_wage_source": "Florida minimum wage effective September 30, 2024",
-      "minimum_wage_statute": "Florida Constitution Art. X §24",
-      "tipped_minimum": 9.98,
-      "note_es": "Florida: $13.00/hora mínimo (2024-2025)."
+  "state_code": "FL",
+  "state_name_en": "Florida",
+  "state_name_es": "Florida",
+  "last_verified": "2025-01-01",
+  "source_url": "https://floridajobs.org",
+  "wages": {
+    "minimum_wage": 13.00,
+    "minimum_wage_source": "Florida minimum wage effective September 30, 2024",
+    "minimum_wage_statute": "Florida Constitution Art. X §24",
+    "tipped_minimum": 9.98,
+    "note_es": "Florida: $13.00/hora mínimo (2024-2025)."
+  },
+  "overtime": {
+    "weekly_threshold": 40,
+    "daily_threshold": null,
+    "multiplier_standard": 1.5,
+    "multiplier_double": null,
+    "double_time_threshold": null,
+    "statute": "FLSA 29 USC 207(a)(1)",
+    "note_es": "Florida solo sigue la ley federal: más de 40 horas por semana = 1.5x."
+  },
+  "paystub": {
+    "itemized_required": false,
+    "statute": "Florida has no state paystub requirement",
+    "note_es": "Florida no requiere recibos detallados por ley estatal."
+  },
+  "deductions": {
+    "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
+    "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues", "tools", "uniforms"],
+    "never_allowed": ["deductions_below_minimum_wage"],
+    "statute": "FLSA 29 USC 203(m)",
+    "note_es": "Las deducciones no pueden bajar tu salario por debajo del mínimo de Florida."
+  },
+  "legal_aid": [
+    {
+      "name": "Florida Legal Services",
+      "name_en": "Florida Legal Services",
+      "name_es": "Servicios Legales de Florida",
+      "phone": "850-385-9007",
+      "phone_note_en": "Free, Spanish service available",
+      "phone_note_es": "Gratis, servicio en español",
+      "url": "https://floridalegal.org",
+      "serves_undocumented": true,
+      "coverage": "All of Florida"
     },
-    "overtime": {
-      "weekly_threshold": 40,
-      "daily_threshold": null,
-      "multiplier_standard": 1.5,
-      "multiplier_double": null,
-      "double_time_threshold": null,
-      "statute": "FLSA 29 USC 207(a)(1)",
-      "note_es": "Florida solo sigue la ley federal: más de 40 horas por semana = 1.5x."
-    },
-    "paystub": {
-      "itemized_required": false,
-      "statute": "Florida has no state paystub requirement",
-      "note_es": "Florida no requiere recibos detallados por ley estatal."
-    },
-    "deductions": {
-      "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
-      "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues", "tools", "uniforms"],
-      "never_allowed": ["deductions_below_minimum_wage"],
-      "statute": "FLSA 29 USC 203(m)",
-      "note_es": "Las deducciones no pueden bajar tu salario por debajo del mínimo de Florida."
-    },
-    "legal_aid": [
-      {
-        "name": "Florida Legal Services",
-        "name_es": "Servicios Legales de Florida",
-        "phone": "850-385-9007",
-        "phone_note_es": "Gratis, servicio en español",
-        "url": "https://floridalegal.org",
-        "serves_undocumented": true,
-        "coverage": "All of Florida"
-      },
-      {
-        "name": "DOL Wage and Hour Division",
-        "name_es": "División de Salarios y Horas del DOL",
-        "phone": "1-866-487-9243",
-        "phone_note_es": "Gratis, servicio en español",
-        "url": "https://www.dol.gov/agencies/whd",
-        "serves_undocumented": true,
-        "coverage": "All of Florida"
-      }
-    ],
-    "worker_rights_summary_es": "En Florida, tienes derecho a $13.00/hora mínimo y 1.5x tu tarifa después de 40 horas semanales.",
-    "worker_rights_summary_en": "In Florida, you have the right to $13.00/hour minimum and 1.5x overtime after 40 hours/week."
-  }
+    {
+      "name": "DOL Wage and Hour Division",
+      "name_en": "DOL Wage and Hour Division",
+      "name_es": "División de Salarios y Horas del DOL",
+      "phone": "1-866-487-9243",
+      "phone_note_en": "Free, Spanish service available, undocumented workers can call",
+      "phone_note_es": "Gratis, servicio en español",
+      "url": "https://www.dol.gov/agencies/whd",
+      "serves_undocumented": true,
+      "coverage": "All of Florida"
+    }
+  ],
+  "worker_rights_summary_es": "En Florida, tienes derecho a $13.00/hora mínimo y 1.5x tu tarifa después de 40 horas semanales.",
+  "worker_rights_summary_en": "In Florida, you have the right to $13.00/hour minimum and 1.5x overtime after 40 hours/week."
+}

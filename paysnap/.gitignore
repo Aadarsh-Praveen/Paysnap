@@ -60,3 +60,13 @@ logs/
 # Test artifacts
 .coverage
 htmlcov/
+
+# DOL enforcement CSV files — too large for GitHub
+# Download from: data.dol.gov/datasets/10246
+data/LOAD*.csv
+data/whd_*.csv
+
+# Fine-tuning processed data — published on Kaggle
+# https://www.kaggle.com/datasets/aadarshpraveen/paysnap-labor-law-dataset
+finetune/dataset/processed/
+finetune/dataset/raw/

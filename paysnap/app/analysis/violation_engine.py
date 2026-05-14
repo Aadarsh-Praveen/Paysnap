@@ -78,4 +78,4 @@ class ViolationEngine:
         except:
             return [{"organization_name": "DOL Wage and Hour Division",
                      "phone": "1-866-487-9243",
-                     "phone_note_es": "Gratis, español"}]
+                     "phone_note_es": "Free, bilingual service available"}]

@@ -63,8 +63,10 @@ def build_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             state_code TEXT,
             organization_name TEXT,
+            organization_name_en TEXT,
             organization_name_es TEXT,
             phone TEXT,
+            phone_note_en TEXT,
             phone_note_es TEXT,
             url TEXT,
             serves_undocumented INTEGER DEFAULT 1,
@@ -85,7 +87,10 @@ def build_database():
             d["state_name_es"],
             d["wages"]["minimum_wage"],
             d["wages"].get("minimum_wage_nyc") or d["wages"].get("minimum_wage_chicago"),
-            "City minimum" if (d["wages"].get("minimum_wage_nyc") or d["wages"].get("minimum_wage_chicago")) else None,
+            "City minimum" if (
+                d["wages"].get("minimum_wage_nyc") or
+                d["wages"].get("minimum_wage_chicago")
+            ) else None,
             d["wages"].get("minimum_wage_statute"),
             d["wages"].get("tipped_minimum"),
             d["overtime"]["weekly_threshold"],
@@ -103,22 +108,49 @@ def build_database():
         ))
 
         for dt in d["deductions"].get("allowed_without_consent", []):
-            c.execute("INSERT INTO deduction_rules (state_code,deduction_type,is_allowed,requires_written_consent,statute) VALUES (?,?,?,?,?)",
-                      (sc, dt, 1, 0, d["deductions"].get("statute")))
+            c.execute(
+                "INSERT INTO deduction_rules "
+                "(state_code,deduction_type,is_allowed,requires_written_consent,statute) "
+                "VALUES (?,?,?,?,?)",
+                (sc, dt, 1, 0, d["deductions"].get("statute"))
+            )
 
         for dt in d["deductions"].get("allowed_with_written_consent", []):
-            c.execute("INSERT INTO deduction_rules (state_code,deduction_type,is_allowed,requires_written_consent,statute) VALUES (?,?,?,?,?)",
-                      (sc, dt, 1, 1, d["deductions"].get("statute")))
+            c.execute(
+                "INSERT INTO deduction_rules "
+                "(state_code,deduction_type,is_allowed,requires_written_consent,statute) "
+                "VALUES (?,?,?,?,?)",
+                (sc, dt, 1, 1, d["deductions"].get("statute"))
+            )
 
         for dt in d["deductions"].get("never_allowed", []):
-            c.execute("INSERT INTO deduction_rules (state_code,deduction_type,is_allowed,requires_written_consent,statute) VALUES (?,?,?,?,?)",
-                      (sc, dt, 0, 0, d["deductions"].get("statute")))
+            c.execute(
+                "INSERT INTO deduction_rules "
+                "(state_code,deduction_type,is_allowed,requires_written_consent,statute) "
+                "VALUES (?,?,?,?,?)",
+                (sc, dt, 0, 0, d["deductions"].get("statute"))
+            )
 
         for contact in d.get("legal_aid", []):
-            c.execute("INSERT INTO legal_aid (state_code,organization_name,organization_name_es,phone,phone_note_es,url,serves_undocumented,coverage) VALUES (?,?,?,?,?,?,?,?)",
-                      (sc, contact["name"], contact.get("name_es"), contact.get("phone"),
-                       contact.get("phone_note_es"), contact.get("url"),
-                       1 if contact.get("serves_undocumented") else 0, contact.get("coverage")))
+            c.execute(
+                "INSERT INTO legal_aid "
+                "(state_code,organization_name,organization_name_en,"
+                "organization_name_es,phone,phone_note_en,phone_note_es,"
+                "url,serves_undocumented,coverage) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (
+                    sc,
+                    contact["name"],
+                    contact.get("name_en", contact["name"]),
+                    contact.get("name_es", contact["name"]),
+                    contact.get("phone"),
+                    contact.get("phone_note_en", "Free, bilingual service available"),
+                    contact.get("phone_note_es", "Gratis, servicio en español"),
+                    contact.get("url"),
+                    1 if contact.get("serves_undocumented") else 0,
+                    contact.get("coverage")
+                )
+            )
 
         print(f"  Loaded: {sc}")
 

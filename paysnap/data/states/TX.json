@@ -1,58 +1,62 @@
 {
-    "state_code": "TX",
-    "state_name_en": "Texas",
-    "state_name_es": "Texas",
-    "last_verified": "2025-01-01",
-    "source_url": "https://www.twc.texas.gov/businesses/texas-payday-law",
-    "wages": {
-      "minimum_wage": 7.25,
-      "minimum_wage_source": "Federal FLSA - Texas has no higher state minimum",
-      "minimum_wage_statute": "29 USC 206",
-      "tipped_minimum": 2.13,
-      "note_es": "Texas sigue el salario mínimo federal de $7.25/hora"
+  "state_code": "TX",
+  "state_name_en": "Texas",
+  "state_name_es": "Texas",
+  "last_verified": "2025-01-01",
+  "source_url": "https://www.twc.texas.gov/businesses/texas-payday-law",
+  "wages": {
+    "minimum_wage": 7.25,
+    "minimum_wage_source": "Federal FLSA - Texas has no higher state minimum",
+    "minimum_wage_statute": "29 USC 206",
+    "tipped_minimum": 2.13,
+    "note_es": "Texas sigue el salario mínimo federal de $7.25/hora"
+  },
+  "overtime": {
+    "weekly_threshold": 40,
+    "daily_threshold": null,
+    "multiplier_standard": 1.5,
+    "multiplier_double": null,
+    "double_time_threshold": null,
+    "statute": "FLSA 29 USC 207(a)(1)",
+    "statute_url": "https://www.law.cornell.edu/uscode/text/29/207",
+    "note_es": "Texas solo sigue la ley federal: más de 40 horas por semana = 1.5x"
+  },
+  "paystub": {
+    "itemized_required": false,
+    "statute": "Texas Payday Law §61.014",
+    "note_es": "Texas no requiere recibos de pago detallados por ley estatal"
+  },
+  "deductions": {
+    "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
+    "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues", "tools", "uniforms"],
+    "never_allowed": ["deductions_below_minimum_wage"],
+    "statute": "Texas Payday Law §61.018",
+    "note_es": "Las deducciones no pueden bajar tu salario por debajo del mínimo federal"
+  },
+  "legal_aid": [
+    {
+      "name": "Texas RioGrande Legal Aid",
+      "name_en": "Texas RioGrande Legal Aid",
+      "name_es": "Asistencia Legal de Texas RioGrande",
+      "phone": "1-888-988-9996",
+      "phone_note_en": "Free, Spanish service available, undocumented workers can call",
+      "phone_note_es": "Gratis, servicio en español disponible",
+      "url": "https://www.trla.org",
+      "serves_undocumented": true,
+      "coverage": "South and West Texas"
     },
-    "overtime": {
-      "weekly_threshold": 40,
-      "daily_threshold": null,
-      "multiplier_standard": 1.5,
-      "multiplier_double": null,
-      "double_time_threshold": null,
-      "statute": "FLSA 29 USC 207(a)(1)",
-      "statute_url": "https://www.law.cornell.edu/uscode/text/29/207",
-      "note_es": "Texas solo sigue la ley federal: más de 40 horas por semana = 1.5x"
-    },
-    "paystub": {
-      "itemized_required": false,
-      "statute": "Texas Payday Law §61.014",
-      "note_es": "Texas no requiere recibos de pago detallados por ley estatal"
-    },
-    "deductions": {
-      "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
-      "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues", "tools", "uniforms"],
-      "never_allowed": ["deductions_below_minimum_wage"],
-      "statute": "Texas Payday Law §61.018",
-      "note_es": "Las deducciones no pueden bajar tu salario por debajo del mínimo federal"
-    },
-    "legal_aid": [
-      {
-        "name": "Texas RioGrande Legal Aid",
-        "name_es": "Asistencia Legal de Texas RioGrande",
-        "phone": "1-888-988-9996",
-        "phone_note_es": "Gratis, servicio en español disponible",
-        "url": "https://www.trla.org",
-        "serves_undocumented": true,
-        "coverage": "South and West Texas"
-      },
-      {
-        "name": "DOL Wage and Hour Division",
-        "name_es": "División de Salarios y Horas del DOL",
-        "phone": "1-866-487-9243",
-        "phone_note_es": "Gratis, servicio en español, trabajadores indocumentados pueden llamar",
-        "url": "https://www.dol.gov/agencies/whd",
-        "serves_undocumented": true,
-        "coverage": "All of Texas"
-      }
-    ],
-    "worker_rights_summary_es": "En Texas, tienes derecho a recibir al menos $7.25 por hora y 1.5 veces tu tarifa normal por horas extra después de 40 horas por semana. Estos derechos aplican sin importar tu estatus migratorio.",
-    "worker_rights_summary_en": "In Texas, you have the right to receive at least $7.25/hour and 1.5x your regular rate for overtime after 40 hours per week. These rights apply regardless of immigration status."
-  }
+    {
+      "name": "DOL Wage and Hour Division",
+      "name_en": "DOL Wage and Hour Division",
+      "name_es": "División de Salarios y Horas del DOL",
+      "phone": "1-866-487-9243",
+      "phone_note_en": "Free, Spanish service available, undocumented workers can call",
+      "phone_note_es": "Gratis, servicio en español, trabajadores indocumentados pueden llamar",
+      "url": "https://www.dol.gov/agencies/whd",
+      "serves_undocumented": true,
+      "coverage": "All of Texas"
+    }
+  ],
+  "worker_rights_summary_es": "En Texas, tienes derecho a recibir al menos $7.25 por hora y 1.5 veces tu tarifa normal por horas extra después de 40 horas por semana. Estos derechos aplican sin importar tu estatus migratorio.",
+  "worker_rights_summary_en": "In Texas, you have the right to receive at least $7.25/hour and 1.5x your regular rate for overtime after 40 hours per week. These rights apply regardless of immigration status."
+}

@@ -22,16 +22,14 @@ from app.output.evidence_vault import EvidenceVault
 
 app = FastAPI(title="PaySnap API", version="1.0.0")
 
-# Allow React frontend to call this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize components
 handler = InputHandler()
 engine = ViolationEngine()
 gemma = GemmaClient()
@@ -51,16 +49,15 @@ def health():
 async def extract_from_file(file: UploadFile = File(...)):
     """
     Upload a paystub file (photo/PDF/Word/Excel).
-    Returns extracted fields for worker to verify.
+    Gemma 4 reads it and returns extracted fields.
+    Worker verifies before analysis runs.
     """
     try:
-        # Save uploaded file to temp location
         suffix = os.path.splitext(file.filename)[1]
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
         shutil.copyfileobj(file.file, tmp)
         tmp.close()
 
-        # Extract using existing pipeline
         extracted = handler.handle(tmp.name)
         os.unlink(tmp.name)
 
@@ -94,16 +91,18 @@ async def analyze_paystub(
     overtime_hours: float = Form(0),
     hourly_rate: float = Form(0),
     state: str = Form("TX"),
-    deductions: str = Form(""),  # JSON string
+    deductions: str = Form(""),
+    language: str = Form("es"),
 ):
     """
     Analyze paystub data for violations.
-    Returns Spanish explanation + math breakdown + legal aid.
+    Returns explanation in worker's language + math breakdown + legal aid.
+    The math is always deterministic — Gemma only explains, never decides.
     """
     try:
         import json
 
-        # Parse deductions
+        # Parse deductions from JSON string
         ded_list = []
         if deductions:
             try:
@@ -116,6 +115,7 @@ async def analyze_paystub(
             except:
                 pass
 
+        # Build paystub from worker-confirmed data
         paystub = PaystubData(
             employer_name=employer or "Unknown",
             regular_hours=regular_hours,
@@ -127,10 +127,51 @@ async def analyze_paystub(
             state=state
         )
 
+        # Run deterministic analysis
         use_state = state if state in ["TX", "CA", "NY", "FL", "IL"] else "TX"
         report = engine.analyze(paystub, use_state)
-        explanation = gemma.generate_spanish_explanation(report)
+
+        # Generate explanation in worker's language via Gemma 4
+        explanation = gemma.generate_explanation(report, language=language)
+
+        # Save to encrypted local vault
         vault.save_record(paystub, report)
+
+        # Build illegal deductions list
+        # Translate reason if not Spanish
+        illegal_deds = []
+        for r in report.illegal_deductions:
+            reason = r.reason_es
+            if language not in ["es", "en"]:
+                try:
+                    reason = gemma._call_text(
+                        f"Translate this one sentence to {language}. "
+                        f"Return only the translated sentence, nothing else: "
+                        f"{r.reason_es}"
+                    )
+                except:
+                    pass  # Keep Spanish if translation fails
+            illegal_deds.append({
+                "name": r.deduction.name,
+                "amount": r.deduction.amount,
+                "reason_es": reason,
+                "statute": r.statute
+            })
+
+        # Translate legal aid phone notes if not Spanish
+        legal_aid = []
+        for c in report.legal_aid_contacts[:2]:
+            contact = dict(c)
+            if language != "es":
+                # Use English organization name for non-Spanish languages
+                if contact.get("organization_name_en"):
+                    contact["organization_name_es"] = contact["organization_name_en"]
+                elif contact.get("organization_name"):
+                    contact["organization_name_es"] = contact["organization_name"]
+                # Use English phone note
+                if contact.get("phone_note_en"):
+                    contact["phone_note_es"] = contact["phone_note_en"]
+            legal_aid.append(contact)
 
         return {
             "success": True,
@@ -145,16 +186,8 @@ async def analyze_paystub(
                     "ot_hours_owed": report.overtime.ot_hours_owed,
                     "ot_pay_owed": report.overtime.ot_pay_owed,
                 },
-                "illegal_deductions": [
-                    {
-                        "name": r.deduction.name,
-                        "amount": r.deduction.amount,
-                        "reason_es": r.reason_es,
-                        "statute": r.statute
-                    }
-                    for r in report.illegal_deductions
-                ],
-                "legal_aid": report.legal_aid_contacts[:2]
+                "illegal_deductions": illegal_deds,
+                "legal_aid": legal_aid
             }
         }
     except Exception as e:
@@ -178,7 +211,10 @@ async def generate_demand_letter(
     breakdown: str = Form(""),
     statute: str = Form("FLSA 29 USC 207(a)(1)")
 ):
-    """Generates formal English demand letter."""
+    """
+    Generates formal English demand letter.
+    Always in English — this is a legal document for the employer.
+    """
     try:
         prompt = f"""Write a professional wage claim demand letter in English.
 
@@ -217,11 +253,21 @@ Letter:"""
 
 
 @app.get("/history")
-def get_history():
-    """Returns paystub analysis history."""
+def get_history(language: str = "es"):
     try:
         records = vault.get_all()
         summary = vault.get_summary()
+
+        if language not in ["es", "en"] and summary.get("message_es"):
+            try:
+                summary["message_es"] = gemma._call_text(
+                    f"Translate this one sentence to {language}. "
+                    f"Return only the translated sentence, nothing else: "
+                    f"{summary['message_es']}"
+                )
+            except:
+                pass
+
         return {
             "success": True,
             "data": {
@@ -238,7 +284,7 @@ def get_history():
 
 @app.get("/export")
 def export_evidence():
-    """Exports evidence vault as downloadable text file."""
+    """Exports evidence vault as downloadable text file for legal aid."""
     try:
         text = vault.export_text()
         tmp = tempfile.NamedTemporaryFile(
@@ -253,6 +299,186 @@ def export_evidence():
             filename="paysnap_evidencia.txt"
         )
     except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+
+@app.post("/translate-ui")
+async def translate_ui(
+    language: str = Form("es"),
+    language_name: str = Form("Spanish")
+):
+    """
+    Translates all UI strings into requested language.
+    Splits into batches of 10 to avoid Ollama timeout.
+    Keys are normalized to match exactly what frontend expects.
+    Adding a new language requires zero changes here.
+    """
+    try:
+        import json
+
+        all_strings = {
+            "tagline": "Your paystub. Your rights. On your phone.",
+            "disclaimer": "PaySnap helps you understand your paystub. Not legal advice. Your data never leaves your device.",
+            "tab_analyze": "Analyze",
+            "tab_history": "History",
+            "tab_rights": "Rights",
+            "step1": "Step 1",
+            "step2": "Step 2",
+            "step3": "Step 3",
+            "upload_title": "Upload your paystub",
+            "upload_sub": "Accepts photo, PDF, Word or Excel",
+            "upload_tap": "Tap here to upload your paystub",
+            "upload_formats": "Photo · PDF · Word · Excel",
+            "upload_change": "Tap to change",
+            "read_btn": "Read paystub automatically",
+            "reading": "Reading with Gemma 4...",
+            "form_title": "Verify or enter your data",
+            "form_sub": "If you uploaded a file check the data is correct",
+            "employer_label": "Employer name",
+            "employer_placeholder": "ABC Construction LLC",
+            "reg_hours": "Regular hours",
+            "ot_hours": "Overtime hours on stub",
+            "rate": "Hourly rate ($)",
+            "state_label": "State",
+            "deductions_label": "Paystub deductions",
+            "ded_placeholder": "e.g. TOOLS",
+            "amount_placeholder": "75.00",
+            "analyze_btn": "Analyze my paystub",
+            "analyzing": "Analyzing with Gemma 4...",
+            "violation_found": "potentially owed",
+            "no_violation": "No issues detected in this paystub",
+            "explanation_title": "Explanation",
+            "math_title": "Math breakdown",
+            "illegal_ded_title": "Illegal deductions detected",
+            "legal_aid_title": "Free legal help",
+            "letter_title": "Demand letter",
+            "letter_btn": "Generate formal letter to employer",
+            "letter_loading": "Generating letter...",
+            "history_title": "Your paystub history",
+            "history_sub": "Saved locally on your device encrypted",
+            "refresh_btn": "Refresh",
+            "export_btn": "Export for attorney",
+            "no_history": "No paystubs analyzed yet. Upload your first paystub to begin.",
+            "rights_title": "Your Rights",
+            "rights_sub": "Regardless of immigration status:",
+            "wages_title": "Minimum wages 2025",
+            "report_title": "Report a violation",
+            "report_free": "Free Bilingual Regardless of immigration status",
+            "privacy_title": "Your privacy in PaySnap",
+            "privacy_1": "Zero cloud data everything on your device",
+            "privacy_2": "No account or password required",
+            "privacy_3": "No telemetry or tracking",
+            "privacy_4": "History encrypted locally",
+            "right_1_title": "Minimum wage",
+            "right_1_desc": "Your employer MUST pay at least the state minimum wage",
+            "right_2_title": "Overtime",
+            "right_2_desc": "Over 40 hours per week equals 1.5x your regular rate",
+            "right_3_title": "No retaliation",
+            "right_3_desc": "Illegal to fire you for reporting wage violations",
+            "right_4_title": "Federal FLSA Law",
+            "right_4_desc": "Protects all workers in the United States",
+        }
+
+        def batch_dict(d, size=10):
+            items = list(d.items())
+            return [dict(items[i:i+size]) for i in range(0, len(items), size)]
+
+        def normalize_keys(result: dict, original_batch: dict) -> dict:
+            """
+            Forces returned keys to match original keys exactly.
+            Gemma sometimes changes casing, adds spaces, or renames keys.
+            """
+            normalized = {}
+            result_lower = {k.lower().strip(): v for k, v in result.items()}
+
+            for orig_key in original_batch.keys():
+                if orig_key in result:
+                    normalized[orig_key] = result[orig_key]
+                elif orig_key.lower() in result_lower:
+                    normalized[orig_key] = result_lower[orig_key.lower()]
+                else:
+                    orig_no_underscore = orig_key.replace("_", " ").lower()
+                    found = False
+                    for rk, rv in result.items():
+                        if rk.replace("_", " ").lower() == orig_no_underscore:
+                            normalized[orig_key] = rv
+                            found = True
+                            break
+                    if not found:
+                        normalized[orig_key] = original_batch[orig_key]
+                        print(f"  Key not found: {orig_key} — using English")
+
+            return normalized
+
+        def translate_batch(batch: dict) -> dict:
+            batch_json = json.dumps(batch, ensure_ascii=False, indent=2)
+
+            prompt = f"""You are a translator. Translate the JSON values below into {language_name} ({language}).
+
+CRITICAL RULES:
+1. Return ONLY a valid JSON object
+2. Keep ALL keys EXACTLY as they appear — do not change key names at all
+3. Only translate the string values
+4. Keep these words exactly as-is in values: PaySnap, Gemma 4, FLSA, PDF, Word, Excel
+5. Keep $ signs and numbers unchanged
+6. Do not add any explanation, markdown, or extra text
+7. The output must be valid JSON that can be parsed with json.loads()
+
+Input JSON:
+{batch_json}
+
+Output (translated JSON only):"""
+
+            response = gemma._call_text(prompt)
+
+            clean = response.strip()
+            if "```json" in clean:
+                clean = clean.split("```json")[1].split("```")[0].strip()
+            elif "```" in clean:
+                clean = clean.split("```")[1].split("```")[0].strip()
+
+            start = clean.find("{")
+            end = clean.rfind("}") + 1
+            if start >= 0 and end > start:
+                clean = clean[start:end]
+
+            result = json.loads(clean)
+            return normalize_keys(result, batch)
+
+        # Translate in batches
+        batches = batch_dict(all_strings, size=10)
+        translated = {}
+
+        for i, batch in enumerate(batches):
+            print(f"Translating batch {i+1}/{len(batches)} to {language_name}...")
+            try:
+                result = translate_batch(batch)
+                print(f"  Keys: {list(result.keys())}")
+                print(f"  Sample: {list(result.items())[:2]}")
+                translated.update(result)
+            except Exception as batch_error:
+                print(f"  Batch {i+1} failed: {batch_error} — using English")
+                translated.update(batch)
+
+        print(f"Translation complete: {len(translated)} strings")
+        print(f"Sample: {dict(list(translated.items())[:3])}")
+
+        return {
+            "success": True,
+            "data": {
+                "translations": translated,
+                "language": language,
+                "language_name": language_name
+            }
+        }
+
+    except Exception as e:
+        print(f"Translation error: {e}")
+        import traceback
+        traceback.print_exc()
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}

@@ -9,14 +9,14 @@ const card = {
   marginBottom: "16px"
 };
 
-export default function History() {
+export default function History({ t, language }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await api.getHistory();
+      const res = await api.getHistory(language || "es");
       if (res.success) setData(res.data);
     } catch (e) {
       console.error(e);
@@ -25,7 +25,8 @@ export default function History() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Re-run when language changes
+  useEffect(() => { load(); }, [language]);
 
   return (
     <div>
@@ -33,33 +34,29 @@ export default function History() {
                     alignItems: "center", marginBottom: "16px" }}>
         <div>
           <div style={{ fontSize: "1.2rem", fontWeight: "700" }}>
-            Mi Historial
+            {t.history_title}
           </div>
           <div style={{ color: "#6b7280", fontSize: "0.8rem", marginTop: "2px" }}>
-            Guardado localmente, encriptado
+            {t.history_sub}
           </div>
         </div>
-        <button
-          onClick={load}
-          style={{
-            background: "#1f2937", border: "1px solid #374151",
-            borderRadius: "8px", padding: "8px 14px",
-            color: "#d1d5db", cursor: "pointer", fontSize: "0.82rem"
-          }}
-        >
-          🔄 Actualizar
+        <button onClick={load} style={{
+          background: "#1f2937", border: "1px solid #374151",
+          borderRadius: "8px", padding: "8px 14px",
+          color: "#d1d5db", cursor: "pointer", fontSize: "0.82rem"
+        }}>
+          🔄 {t.refresh_btn}
         </button>
       </div>
 
       {loading && (
         <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
-          Cargando...
+          ...
         </div>
       )}
 
       {data && (
         <>
-          {/* Summary */}
           {data.summary && (
             <div style={{
               ...card,
@@ -78,25 +75,17 @@ export default function History() {
             </div>
           )}
 
-          {/* Empty state */}
           {(!data.records || data.records.length === 0) && (
-            <div style={{ textAlign: "center", padding: "48px 16px", color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: "48px 16px",
+                          color: "#6b7280" }}>
               <div style={{ fontSize: "3rem", marginBottom: "12px" }}>📋</div>
-              <div style={{ fontWeight: "600", marginBottom: "6px" }}>
-                No hay recibos todavía
-              </div>
-              <div style={{ fontSize: "0.82rem" }}>
-                Analiza tu primer recibo para comenzar
-              </div>
+              <div style={{ whiteSpace: "pre-wrap" }}>{t.no_history}</div>
             </div>
           )}
 
-          {/* Records */}
           {data.records?.map((r, i) => (
             <div key={i} style={{
-              borderRadius: "10px",
-              padding: "14px 16px",
-              marginBottom: "10px",
+              borderRadius: "10px", padding: "14px 16px", marginBottom: "10px",
               border: r.has_violation
                 ? "1px solid rgba(239,68,68,0.3)"
                 : "1px solid rgba(34,197,94,0.3)",
@@ -110,13 +99,13 @@ export default function History() {
                   <div style={{ fontWeight: "600", fontSize: "0.9rem" }}>
                     {r.has_violation ? "🚨" : "✅"} {r.employer}
                   </div>
-                  <div style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "3px" }}>
-                    {r.timestamp?.slice(0, 10)} · {r.state} ·{" "}
-                    {r.hours_worked}h @ ${r.hourly_rate}/hr
+                  <div style={{ color: "#6b7280", fontSize: "0.75rem",
+                                marginTop: "3px" }}>
+                    {r.timestamp?.slice(0, 10)} · {r.state}
                   </div>
                 </div>
                 {r.has_violation && (
-                  <div style={{ color: "#f87171", fontWeight: "800", fontSize: "1rem" }}>
+                  <div style={{ color: "#f87171", fontWeight: "800" }}>
                     ${r.money_owed?.toFixed(2)}
                   </div>
                 )}
@@ -124,19 +113,14 @@ export default function History() {
             </div>
           ))}
 
-          {/* Export */}
           {data.records?.length > 0 && (
-            <button
-              onClick={() => api.exportEvidence()}
-              style={{
-                width: "100%", background: "#1f2937",
-                border: "1px solid #374151", borderRadius: "10px",
-                padding: "14px", color: "#d1d5db",
-                cursor: "pointer", fontSize: "0.9rem",
-                fontWeight: "600", marginTop: "8px"
-              }}
-            >
-              📤 Exportar evidencia para abogado
+            <button onClick={() => api.exportEvidence()} style={{
+              width: "100%", background: "#1f2937",
+              border: "1px solid #374151", borderRadius: "10px",
+              padding: "14px", color: "#d1d5db", cursor: "pointer",
+              fontSize: "0.9rem", fontWeight: "600", marginTop: "8px"
+            }}>
+              📤 {t.export_btn}
             </button>
           )}
         </>

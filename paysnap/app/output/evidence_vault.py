@@ -8,7 +8,6 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from cryptography.fernet import Fernet
 
 
@@ -43,12 +42,20 @@ class EvidenceVault:
 
     def get_all(self):
         records = self._load()
-        return sorted(records.values(), key=lambda r: r["timestamp"], reverse=True)
+        return sorted(
+            records.values(),
+            key=lambda r: r["timestamp"],
+            reverse=True
+        )
 
     def get_summary(self):
         records = self.get_all()
         if not records:
-            return {"message_es": "No hay recibos analizados todavía.", "total_money_owed": 0}
+            return {
+                "message_es": "No paystubs analyzed yet.",
+                "total_money_owed": 0,
+                "violations_found": 0
+            }
         total = sum(r.get("money_owed", 0) for r in records)
         violations = sum(1 for r in records if r.get("has_violation"))
         return {
@@ -56,31 +63,60 @@ class EvidenceVault:
             "total_money_owed": total,
             "violations_found": violations,
             "message_es": (
-                f"Analizaste {len(records)} recibos. "
-                f"En {violations} semanas detectamos posibles problemas. "
-                f"Total potencial: ${total:,.2f}"
+                f"Analyzed {len(records)} paystubs. "
+                f"Found potential violations in {violations}. "
+                f"Total potential: ${total:,.2f}"
             )
         }
 
     def export_text(self):
+        """
+        Exports evidence as plain text file for legal aid attorney.
+        All text in English — this is a legal document.
+        """
         records = self.get_all()
         if not records:
-            return "No hay registros."
-        lines = ["REGISTRO — PaySnap", f"Generado: {datetime.now():%Y-%m-%d}", "="*40, ""]
+            return "No records found."
+
+        lines = [
+            "PAYSNAP EVIDENCE RECORD",
+            f"Generated: {datetime.now():%Y-%m-%d %H:%M}",
+            "=" * 40,
+            "NOTE: Consult a labor attorney before taking action.",
+            "NOTE: This is not legal advice.",
+            "",
+        ]
+
         total = 0
         for r in records:
+            status = (
+                f"⚠️ VIOLATION DETECTED: ${round(r['money_owed'], 2)}"
+                if r.get("has_violation")
+                else "✓ No issues detected"
+            )
             lines += [
-                f"Fecha: {r['timestamp'][:10]}",
-                f"Empleador: {r['employer']}",
-                f"Estado: {r['state']}",
-                f"Horas: {r.get('hours_worked')}",
-                f"Tarifa: ${r.get('hourly_rate', 0):.2f}/hr",
-                f"{'⚠️ PROBLEMA: $' + str(round(r['money_owed'], 2)) if r.get('has_violation') else '✓ Sin problemas'}",
-                "-"*30, ""
+                f"Date:        {r['timestamp'][:10]}",
+                f"Employer:    {r['employer']}",
+                f"State:       {r['state']}",
+                f"Hours:       {r.get('hours_worked')}",
+                f"Rate:        ${r.get('hourly_rate', 0):.2f}/hr",
+                f"Gross pay:   ${r.get('gross_pay', 0):.2f}",
+                f"Status:      {status}",
+                "-" * 30,
+                "",
             ]
             total += r.get("money_owed", 0)
-        lines.append(f"TOTAL POTENCIAL: ${total:,.2f}")
-        lines.append("\nNOTA: Consulta con un abogado laboral antes de tomar acción.")
+
+        lines += [
+            "=" * 40,
+            f"TOTAL POTENTIAL OWED: ${total:,.2f}",
+            "",
+            "TO FILE A COMPLAINT:",
+            "DOL Wage and Hour Division: 1-866-487-9243",
+            "Web: https://www.dol.gov/agencies/whd/contact/complaints",
+            "Free · Confidential · Regardless of immigration status",
+        ]
+
         return "\n".join(lines)
 
     def _get_or_create_key(self):

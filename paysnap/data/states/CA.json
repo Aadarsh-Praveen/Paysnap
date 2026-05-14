@@ -1,60 +1,64 @@
 {
-    "state_code": "CA",
-    "state_name_en": "California",
-    "state_name_es": "California",
-    "last_verified": "2025-01-01",
-    "source_url": "https://www.dir.ca.gov/dlse/faq_overtime.htm",
-    "wages": {
-      "minimum_wage": 16.50,
-      "minimum_wage_source": "California minimum wage effective January 1, 2025",
-      "minimum_wage_statute": "CA Labor Code §1182.12",
-      "tipped_minimum": 16.50,
-      "note_es": "California: $16.50/hora mínimo (2025). No se permite reducción por propinas."
+  "state_code": "CA",
+  "state_name_en": "California",
+  "state_name_es": "California",
+  "last_verified": "2025-01-01",
+  "source_url": "https://www.dir.ca.gov/dlse/faq_overtime.htm",
+  "wages": {
+    "minimum_wage": 16.50,
+    "minimum_wage_source": "California minimum wage effective January 1, 2025",
+    "minimum_wage_statute": "CA Labor Code §1182.12",
+    "tipped_minimum": 16.50,
+    "note_es": "California: $16.50/hora mínimo (2025). No se permite reducción por propinas."
+  },
+  "overtime": {
+    "weekly_threshold": 40,
+    "daily_threshold": 8,
+    "multiplier_standard": 1.5,
+    "multiplier_double": 2.0,
+    "double_time_threshold": 12,
+    "statute": "CA Labor Code §510",
+    "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=510.&lawCode=LAB",
+    "note_es": "California: más de 8 horas/día = 1.5x. Más de 12 horas/día = 2x."
+  },
+  "paystub": {
+    "itemized_required": true,
+    "required_fields": ["gross_wages", "total_hours_worked", "all_deductions", "net_wages", "pay_period_dates", "employer_name", "employer_address"],
+    "statute": "CA Labor Code §226",
+    "penalty_per_violation": 50,
+    "note_es": "California requiere recibos detallados. Si falta información = violación."
+  },
+  "deductions": {
+    "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment", "state_disability_insurance"],
+    "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
+    "never_allowed": ["tools", "uniforms", "business_expenses", "deductions_below_minimum_wage"],
+    "statute": "CA Labor Code §221-224",
+    "note_es": "En California, el empleador NO puede cobrar por herramientas, uniformes o gastos de negocio."
+  },
+  "legal_aid": [
+    {
+      "name": "Bet Tzedek Legal Services",
+      "name_en": "Bet Tzedek Legal Services",
+      "name_es": "Servicios Legales Bet Tzedek",
+      "phone": "323-939-0506",
+      "phone_note_en": "Free, Spanish service available, Los Angeles",
+      "phone_note_es": "Gratis, servicio en español, Los Angeles",
+      "url": "https://www.bettzedek.org",
+      "serves_undocumented": true,
+      "coverage": "Los Angeles"
     },
-    "overtime": {
-      "weekly_threshold": 40,
-      "daily_threshold": 8,
-      "multiplier_standard": 1.5,
-      "multiplier_double": 2.0,
-      "double_time_threshold": 12,
-      "statute": "CA Labor Code §510",
-      "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=510.&lawCode=LAB",
-      "note_es": "California: más de 8 horas/día = 1.5x. Más de 12 horas/día = 2x."
-    },
-    "paystub": {
-      "itemized_required": true,
-      "required_fields": ["gross_wages", "total_hours_worked", "all_deductions", "net_wages", "pay_period_dates", "employer_name", "employer_address"],
-      "statute": "CA Labor Code §226",
-      "penalty_per_violation": 50,
-      "note_es": "California requiere recibos detallados. Si falta información = violación."
-    },
-    "deductions": {
-      "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment", "state_disability_insurance"],
-      "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
-      "never_allowed": ["tools", "uniforms", "business_expenses", "deductions_below_minimum_wage"],
-      "statute": "CA Labor Code §221-224",
-      "note_es": "En California, el empleador NO puede cobrar por herramientas, uniformes o gastos de negocio."
-    },
-    "legal_aid": [
-      {
-        "name": "Bet Tzedek Legal Services",
-        "name_es": "Servicios Legales Bet Tzedek",
-        "phone": "323-939-0506",
-        "phone_note_es": "Gratis, servicio en español, Los Angeles",
-        "url": "https://www.bettzedek.org",
-        "serves_undocumented": true,
-        "coverage": "Los Angeles"
-      },
-      {
-        "name": "California Labor Commissioner",
-        "name_es": "Comisionado Laboral de California",
-        "phone": "1-844-522-6734",
-        "phone_note_es": "Gratis, servicio en español",
-        "url": "https://www.dir.ca.gov/dlse/",
-        "serves_undocumented": true,
-        "coverage": "All of California"
-      }
-    ],
-    "worker_rights_summary_es": "En California, tienes derecho a $16.50/hora mínimo, tiempo y medio después de 8 horas por día o 40 horas por semana, doble tiempo después de 12 horas por día.",
-    "worker_rights_summary_en": "In California, you have the right to $16.50/hour minimum, overtime after 8 hours/day or 40 hours/week, and double time after 12 hours/day."
-  }
+    {
+      "name": "California Labor Commissioner",
+      "name_en": "California Labor Commissioner",
+      "name_es": "Comisionado Laboral de California",
+      "phone": "1-844-522-6734",
+      "phone_note_en": "Free, Spanish service available",
+      "phone_note_es": "Gratis, servicio en español",
+      "url": "https://www.dir.ca.gov/dlse/",
+      "serves_undocumented": true,
+      "coverage": "All of California"
+    }
+  ],
+  "worker_rights_summary_es": "En California, tienes derecho a $16.50/hora mínimo, tiempo y medio después de 8 horas por día o 40 horas por semana, doble tiempo después de 12 horas por día.",
+  "worker_rights_summary_en": "In California, you have the right to $16.50/hour minimum, overtime after 8 hours/day or 40 hours/week, and double time after 12 hours/day."
+}

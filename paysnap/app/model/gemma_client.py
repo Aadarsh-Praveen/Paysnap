@@ -1,7 +1,7 @@
 """
 gemma_client.py
 Lazy-loads Ollama connection — only connects when first needed.
-This prevents the UI from freezing on startup.
+Supports 11 languages natively via Gemma 4.
 """
 
 import json
@@ -14,7 +14,9 @@ import yaml
 from app.model.prompts import (
     EXTRACTION_FROM_TEXT_PROMPT,
     EXTRACTION_FROM_IMAGE_PROMPT,
-    EXPLANATION_PROMPT_ES,
+    MULTILINGUAL_EXPLANATION_PROMPT,
+    LANGUAGE_INSTRUCTIONS,
+    LEGAL_AID_PHRASES,
     FOLLOWUP_PROMPT_ES,
 )
 from app.core.input_handler import PaystubData, DeductionItem
@@ -48,13 +50,25 @@ class GemmaClient:
             print("WARNING: Ollama not running. Start with: ollama serve")
         self._ollama_checked = True
 
+    # ─────────────────────────────────────────────
+    # EXTRACTION METHODS
+    # These read paystub documents
+    # Same regardless of language
+    # ─────────────────────────────────────────────
+
     def extract_paystub_fields(self, raw_text: str) -> PaystubData:
+        """Extract fields from raw text (PDF/Word)."""
         self._ensure_ollama()
         prompt = EXTRACTION_FROM_TEXT_PROMPT.format(text=raw_text)
         response = self._call_text(prompt)
         return self._parse_extraction(response)
 
-    def extract_paystub_from_image(self, image_path: str, ocr_text: str = "") -> PaystubData:
+    def extract_paystub_from_image(
+        self,
+        image_path: str,
+        ocr_text: str = ""
+    ) -> PaystubData:
+        """Extract fields from paystub photo using Gemma 4 vision."""
         self._ensure_ollama()
         with open(image_path, "rb") as f:
             image_b64 = base64.b64encode(f.read()).decode("utf-8")
@@ -62,21 +76,98 @@ class GemmaClient:
         response = self._call_vision(prompt, image_b64)
         return self._parse_extraction(response)
 
-    def generate_spanish_explanation(self, violation_report) -> str:
+    # ─────────────────────────────────────────────
+    # EXPLANATION METHODS
+    # These generate output in the worker's language
+    # Gemma 4 natively speaks all 11 languages
+    # The math and law never change — only the language
+    # ─────────────────────────────────────────────
+
+    def generate_explanation(
+        self,
+        violation_report,
+        language: str = "es"
+    ) -> str:
+        """
+        Generates violation explanation in the worker's language.
+
+        Supported languages:
+        es=Spanish, zh=Mandarin, pt=Portuguese, ht=Haitian Creole,
+        vi=Vietnamese, ko=Korean, tl=Filipino, hi=Hindi,
+        ar=Arabic, ru=Russian, en=English
+
+        The math and statute citations are always the same.
+        Only the explanation language changes.
+        """
         self._ensure_ollama()
-        report_json = self._serialize_report(violation_report)
-        prompt = EXPLANATION_PROMPT_ES.format(
-            report_json=report_json,
-            state=violation_report.state
+
+        # Get language-specific instructions
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
+            language,
+            LANGUAGE_INSTRUCTIONS["es"]  # Default to Spanish
         )
+
+        legal_aid_phrase = LEGAL_AID_PHRASES.get(
+            language,
+            LEGAL_AID_PHRASES["es"]
+        )
+
+        # Serialize the violation report
+        report_json = self._serialize_report(violation_report)
+
+        # Build the multilingual prompt
+        prompt = MULTILINGUAL_EXPLANATION_PROMPT.format(
+            language_instruction=lang_instruction,
+            state=violation_report.state,
+            language_code=language,
+            report_json=report_json,
+            legal_aid_phrase=legal_aid_phrase
+        )
+
         return self._call_text(prompt)
 
-    def answer_followup(self, question: str, context: str) -> str:
+    def generate_spanish_explanation(self, violation_report) -> str:
+        """
+        Backward compatible method.
+        Calls generate_explanation with Spanish.
+        Used by existing code that hasn't been updated yet.
+        """
+        return self.generate_explanation(violation_report, language="es")
+
+    def answer_followup(
+        self,
+        question: str,
+        context: str,
+        language: str = "es"
+    ) -> str:
+        """Answer worker follow-up questions in their language."""
         self._ensure_ollama()
-        prompt = FOLLOWUP_PROMPT_ES.format(question=question, context=context)
+
+        # Build language-aware followup prompt
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
+            language,
+            LANGUAGE_INSTRUCTIONS["es"]
+        )
+
+        prompt = (
+            f"You are PaySnap, a payroll assistant.\n\n"
+            f"Language instruction: {lang_instruction}\n\n"
+            f"Previous analysis context:\n{context}\n\n"
+            f"Worker question: {question}\n\n"
+            f"Answer in the requested language. "
+            f"If asked about legal action, recommend calling "
+            f"1-866-487-9243. Do not invent legal information.\n\n"
+            f"Answer:"
+        )
+
         return self._call_text(prompt)
+
+    # ─────────────────────────────────────────────
+    # INTERNAL METHODS
+    # ─────────────────────────────────────────────
 
     def _parse_extraction(self, response_text: str) -> PaystubData:
+        """Parse Gemma's JSON extraction response into PaystubData."""
         try:
             clean = response_text.strip()
             if "```json" in clean:
@@ -115,6 +206,7 @@ class GemmaClient:
             return PaystubData(confidence=0.3, needs_review=True)
 
     def _call_text(self, prompt: str) -> str:
+        """Call Ollama text model. Returns response string."""
         try:
             resp = requests.post(
                 f"{OLLAMA_BASE}/api/generate",
@@ -136,6 +228,7 @@ class GemmaClient:
             return "No pudimos procesar. Llama al 1-866-487-9243"
 
     def _call_vision(self, prompt: str, image_b64: str) -> str:
+        """Call Ollama vision model with image."""
         try:
             resp = requests.post(
                 f"{OLLAMA_BASE}/api/generate",
@@ -158,6 +251,11 @@ class GemmaClient:
             return "{}"
 
     def _serialize_report(self, report) -> str:
+        """
+        Converts violation report to JSON for prompts.
+        Language-neutral — always serializes in English keys.
+        The explanation method handles language translation.
+        """
         data = {
             "state": report.state,
             "has_violation": report.has_any_violation,
@@ -167,23 +265,32 @@ class GemmaClient:
                 "ot_hours_owed": report.overtime.ot_hours_owed,
                 "ot_pay_owed": report.overtime.ot_pay_owed,
                 "statute": report.overtime.statute,
-                "statute_es": report.overtime.statute_description_es,
+                "statute_description": report.overtime.statute_description_en,
                 "breakdown": report.overtime.calculation_breakdown
             },
             "illegal_deductions": [
                 {
                     "name": r.deduction.name,
                     "amount": r.deduction.amount,
-                    "reason_es": r.reason_es,
+                    "reason": r.reason_en,
                     "statute": r.statute
                 }
                 for r in report.illegal_deductions
+            ],
+            "suspicious_deductions": [
+                {
+                    "name": r.deduction.name,
+                    "amount": r.deduction.amount,
+                    "requires_consent": r.requires_written_consent
+                }
+                for r in report.suspicious_deductions
             ],
             "legal_aid": report.legal_aid_contacts[:2]
         }
         return json.dumps(data, ensure_ascii=False, indent=2)
 
     def _safe_float(self, value) -> Optional[float]:
+        """Safely convert value to float."""
         if value is None:
             return None
         try:
