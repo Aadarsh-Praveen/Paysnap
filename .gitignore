@@ -70,3 +70,17 @@ data/whd_*.csv
 # https://www.kaggle.com/datasets/aadarshpraveen/paysnap-labor-law-dataset
 finetune/dataset/processed/
 finetune/dataset/raw/
+
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# API keys
+*.key
+secrets/
