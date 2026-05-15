@@ -1,130 +1,184 @@
 import { useState, useEffect } from "react";
 import { api } from "../api/client";
 
-const card = {
-  background: "#111827",
-  border: "1px solid #1f2937",
-  borderRadius: "12px",
-  padding: "20px",
-  marginBottom: "16px"
-};
+const ORANGE = "#F97316";
+const TEXT   = "#0F172A";
+const MUTED  = "#64748B";
+const BORDER = "#E2E8F0";
+const LIGHT  = "#F1F5F9";
 
 export default function History({ t, language }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [records,  setRecords]  = useState([]);
+  const [summary,  setSummary]  = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
 
   const load = async () => {
-    setLoading(true);
+    setLoading(true); setError("");
     try {
-      const res = await api.getHistory(language || "es");
-      if (res.success) setData(res.data);
+      const res = await api.getHistory(language);
+      if (res.success) {
+        setRecords(res.data?.records || []);
+        setSummary(res.data?.summary || null);
+      }
     } catch (e) {
-      console.error(e);
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Re-run when language changes
   useEffect(() => { load(); }, [language]);
 
+  // Build summary text using translations
+  const buildSummaryText = (s) => {
+    if (!s) return "";
+    const count      = s.total_paystubs   || 0;
+    const violations = s.total_violations || 0;
+    const total      = s.total_potential  || 0;
+
+    // Use translated template if available, else English
+    if (t.history_summary) {
+      return t.history_summary
+        .replace("{count}", count)
+        .replace("{violations}", violations)
+        .replace("{total}", `$${total.toFixed(2)}`);
+    }
+    return `${count} paystub${count !== 1 ? "s" : ""} analyzed · ${violations} violation${violations !== 1 ? "s" : ""} found · $${total.toFixed(2)} total potential`;
+  };
+
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between",
-                    alignItems: "center", marginBottom: "16px" }}>
+    <div style={{ color: TEXT }}>
+
+      {/* Header */}
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: "flex-start", marginBottom: "16px",
+      }}>
         <div>
-          <div style={{ fontSize: "1.2rem", fontWeight: "700" }}>
-            {t.history_title}
-          </div>
-          <div style={{ color: "#6b7280", fontSize: "0.8rem", marginTop: "2px" }}>
-            {t.history_sub}
-          </div>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0, color: TEXT }}>
+            {t.history_title || "Your paystub history"}
+          </h2>
+          <p style={{ fontSize: "0.78rem", color: MUTED, margin: "4px 0 0" }}>
+            {t.history_sub || "Saved locally on your device, encrypted"}
+          </p>
         </div>
-        <button onClick={load} style={{
-          background: "#1f2937", border: "1px solid #374151",
-          borderRadius: "8px", padding: "8px 14px",
-          color: "#d1d5db", cursor: "pointer", fontSize: "0.82rem"
-        }}>
-          🔄 {t.refresh_btn}
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={load} disabled={loading} style={{
+            background: LIGHT, border: `1px solid ${BORDER}`,
+            borderRadius: "8px", padding: "8px 14px",
+            fontSize: "0.78rem", fontWeight: "600",
+            color: TEXT, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: "6px",
+          }}>
+            {loading ? (
+              <span style={{
+                width:"12px", height:"12px",
+                border:`2px solid ${ORANGE}`, borderTopColor:"transparent",
+                borderRadius:"50%", animation:"spin 0.8s linear infinite",
+                display:"inline-block",
+              }} />
+            ) : "↻"}
+            {t.refresh_btn || "Refresh"}
+          </button>
+          <button onClick={() => api.exportEvidence()} style={{
+            background: `linear-gradient(135deg, ${ORANGE}, #EA580C)`,
+            border: "none", borderRadius: "8px",
+            padding: "8px 14px", fontSize: "0.78rem",
+            fontWeight: "600", color: "white", cursor: "pointer",
+          }}>
+            📤 {t.export_btn || "Export"}
+          </button>
+        </div>
       </div>
 
-      {loading && (
-        <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
-          ...
+      {/* Error */}
+      {error && (
+        <div style={{
+          background:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.25)",
+          borderRadius:"10px", padding:"12px 16px",
+          color:"#dc2626", fontSize:"0.88rem", marginBottom:"12px",
+        }}>❌ {error}</div>
+      )}
+
+      {/* Summary — translated */}
+      {summary && (
+        <div style={{
+          background: "rgba(249,115,22,0.06)",
+          border: "1px solid rgba(249,115,22,0.2)",
+          borderRadius: "14px", padding: "16px 20px",
+          marginBottom: "16px",
+        }}>
+          <div style={{ fontSize: "0.78rem", color: MUTED, marginBottom: "6px" }}>
+            {buildSummaryText(summary)}
+          </div>
+          <div style={{
+            fontFamily: "monospace", fontWeight: "800",
+            fontSize: "1.8rem", color: ORANGE,
+          }}>
+            ${(summary.total_potential || 0).toFixed(2)}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: MUTED, marginTop: "2px" }}>
+            {t.violation_found || "potentially owed"}
+          </div>
         </div>
       )}
 
-      {data && (
-        <>
-          {data.summary && (
-            <div style={{
-              ...card,
-              background: "rgba(249,115,22,0.08)",
-              border: "1px solid rgba(249,115,22,0.3)"
+      {/* Records */}
+      {records.length === 0 ? (
+        <div style={{
+          background: "#fff", border: `1px solid ${BORDER}`,
+          borderRadius: "16px", padding: "40px 20px",
+          textAlign: "center",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>📋</div>
+          <div style={{ color: MUTED, fontSize: "0.88rem", whiteSpace: "pre-line" }}>
+            {t.no_history || "No paystubs analyzed yet.\nUpload your first paystub to begin."}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {records.map((r, i) => (
+            <div key={i} style={{
+              background: "#fff", border: `1px solid ${BORDER}`,
+              borderRadius: "14px", padding: "16px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <div style={{ color: "#fb923c", fontSize: "0.88rem" }}>
-                {data.summary.message_es}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{
+                  width: "36px", height: "36px", borderRadius: "10px",
+                  background: r.has_violation
+                    ? "rgba(249,115,22,0.1)" : "rgba(34,197,94,0.1)",
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", fontSize: "1.1rem",
+                }}>
+                  {r.has_violation ? "🚨" : "✅"}
+                </div>
+                <div>
+                  <div style={{ fontWeight: "700", fontSize: "0.9rem", color: TEXT }}>
+                    {r.employer_name || "Unknown"}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: MUTED, marginTop: "2px" }}>
+                    {r.date} · {r.state}
+                  </div>
+                </div>
               </div>
-              {data.summary.total_money_owed > 0 && (
-                <div style={{ color: "#f97316", fontWeight: "800",
-                              fontSize: "1.6rem", marginTop: "8px" }}>
-                  ${data.summary.total_money_owed.toFixed(2)}
+              {r.has_violation && (
+                <div style={{
+                  fontFamily: "monospace", fontWeight: "700",
+                  fontSize: "1rem", color: ORANGE,
+                }}>
+                  ${(r.total_owed || 0).toFixed(2)}
                 </div>
               )}
             </div>
-          )}
-
-          {(!data.records || data.records.length === 0) && (
-            <div style={{ textAlign: "center", padding: "48px 16px",
-                          color: "#6b7280" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "12px" }}>📋</div>
-              <div style={{ whiteSpace: "pre-wrap" }}>{t.no_history}</div>
-            </div>
-          )}
-
-          {data.records?.map((r, i) => (
-            <div key={i} style={{
-              borderRadius: "10px", padding: "14px 16px", marginBottom: "10px",
-              border: r.has_violation
-                ? "1px solid rgba(239,68,68,0.3)"
-                : "1px solid rgba(34,197,94,0.3)",
-              background: r.has_violation
-                ? "rgba(239,68,68,0.07)"
-                : "rgba(34,197,94,0.07)"
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between",
-                            alignItems: "flex-start" }}>
-                <div>
-                  <div style={{ fontWeight: "600", fontSize: "0.9rem" }}>
-                    {r.has_violation ? "🚨" : "✅"} {r.employer}
-                  </div>
-                  <div style={{ color: "#6b7280", fontSize: "0.75rem",
-                                marginTop: "3px" }}>
-                    {r.timestamp?.slice(0, 10)} · {r.state}
-                  </div>
-                </div>
-                {r.has_violation && (
-                  <div style={{ color: "#f87171", fontWeight: "800" }}>
-                    ${r.money_owed?.toFixed(2)}
-                  </div>
-                )}
-              </div>
-            </div>
           ))}
-
-          {data.records?.length > 0 && (
-            <button onClick={() => api.exportEvidence()} style={{
-              width: "100%", background: "#1f2937",
-              border: "1px solid #374151", borderRadius: "10px",
-              padding: "14px", color: "#d1d5db", cursor: "pointer",
-              fontSize: "0.9rem", fontWeight: "600", marginTop: "8px"
-            }}>
-              📤 {t.export_btn}
-            </button>
-          )}
-        </>
+        </div>
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

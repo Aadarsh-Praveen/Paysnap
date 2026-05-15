@@ -1,135 +1,175 @@
-const card = {
-  background: "#111827",
-  border: "1px solid #1f2937",
-  borderRadius: "12px",
-  padding: "20px",
-  marginBottom: "16px"
-};
+import React from "react";
 
-const WAGES = [
-  { state: "California", flag: "🏖️", amount: "$16.50" },
-  { state: "New York",   flag: "🗽", amount: "$16.00" },
-  { state: "Illinois",   flag: "🌾", amount: "$14.00" },
-  { state: "Florida",    flag: "☀️", amount: "$13.00" },
-  { state: "Texas",      flag: "⭐", amount: "$7.25"  },
-];
+const ORANGE = "#F97316";
+const TEXT   = "#0F172A";
+const MUTED  = "#64748B";
+const BORDER = "#E2E8F0";
+const LIGHT  = "#F1F5F9";
 
 export default function Rights({ t }) {
-  if (!t) return null;
-
-  const rights = [
-    {
-      icon: "💰",
-      title: t.right_1_title || "Minimum wage",
-      desc:  t.right_1_desc  || "Your employer MUST pay at least the state minimum wage"
-    },
-    {
-      icon: "⏰",
-      title: t.right_2_title || "Overtime",
-      desc:  t.right_2_desc  || "Over 40 hours/week = 1.5x your regular rate"
-    },
-    {
-      icon: "🛡️",
-      title: t.right_3_title || "No retaliation",
-      desc:  t.right_3_desc  || "Illegal to fire you for reporting wage violations"
-    },
-    {
-      icon: "📋",
-      title: t.right_4_title || "Federal FLSA Law",
-      desc:  t.right_4_desc  || "Protects all workers in the United States"
-    },
+  const wages = [
+    { state: "🏖️ California", wage: "$16.50/hr" },
+    { state: "🗽 New York",   wage: "$16.00/hr" },
+    { state: "🌾 Illinois",   wage: "$14.00/hr" },
+    { state: "☀️ Florida",    wage: "$13.00/hr" },
+    { state: "⭐ Texas",      wage: "$7.25/hr"  },
   ];
 
-  const privacy = [
-    t.privacy_1 || "Zero cloud data — everything on your device",
-    t.privacy_2 || "No account or password required",
-    t.privacy_3 || "No telemetry or tracking",
-    t.privacy_4 || "History encrypted locally",
+  const rights = [
+    { icon:"💰", title: t.right_1_title, desc: t.right_1_desc },
+    { icon:"⏰", title: t.right_2_title, desc: t.right_2_desc },
+    { icon:"🛡️", title: t.right_3_title, desc: t.right_3_desc },
+    { icon:"📋", title: t.right_4_title, desc: t.right_4_desc },
+  ];
+
+  const privacyItems = [
+    t.privacy_1, t.privacy_2, t.privacy_3, t.privacy_4
   ];
 
   return (
-    <div>
+    <div style={{ color: TEXT }}>
 
-      {/* Rights */}
-      <div style={card}>
-        <div style={{ fontSize: "1.1rem", fontWeight: "700", marginBottom: "6px" }}>
-          {t.rights_title || "Your Rights"}
+      {/* Rights card */}
+      <div style={{
+        background: "#fff",
+        border: `1px solid ${BORDER}`,
+        borderRadius: "16px",
+        overflow: "hidden",
+        marginBottom: "16px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      }}>
+        {/* Header */}
+        <div style={{
+          background: `linear-gradient(135deg, ${ORANGE}, #EA580C)`,
+          padding: "16px 20px",
+        }}>
+          <div style={{
+            fontSize: "0.72rem", fontWeight: "700",
+            textTransform: "uppercase", letterSpacing: "0.1em",
+            color: "rgba(255,255,255,0.8)", marginBottom: "4px",
+          }}>
+            {t.rights_sub || "Regardless of immigration status"}
+          </div>
+          <div style={{ fontSize: "1.1rem", fontWeight: "800", color: "white" }}>
+            {t.rights_title || "Your Rights as a Worker"}
+          </div>
         </div>
-        <div style={{ color: "#9ca3af", fontSize: "0.82rem", marginBottom: "16px" }}>
-          {t.rights_sub || "Regardless of immigration status:"}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          {rights.map((r) => (
-            <div key={r.title} style={{
-              display: "flex", gap: "12px", alignItems: "flex-start"
+
+        {/* Rights items */}
+        {rights.map((r, i) => (
+          <div key={i} style={{
+            padding: "16px 20px",
+            borderBottom: i < rights.length - 1 ? `1px solid ${BORDER}` : "none",
+            display: "flex", gap: "14px", alignItems: "flex-start",
+          }}>
+            <div style={{
+              width: "40px", height: "40px", borderRadius: "10px",
+              background: "rgba(249,115,22,0.08)",
+              display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: "1.2rem", flexShrink: 0,
             }}>
-              <span style={{ fontSize: "1.4rem", flexShrink: 0 }}>{r.icon}</span>
-              <div>
-                <div style={{ fontWeight: "600", fontSize: "0.9rem" }}>
-                  {r.title}
-                </div>
-                <div style={{ color: "#9ca3af", fontSize: "0.8rem",
-                              marginTop: "3px", lineHeight: "1.5" }}>
-                  {r.desc}
-                </div>
+              {r.icon}
+            </div>
+            <div>
+              <div style={{ fontWeight: "700", fontSize: "0.92rem", color: TEXT, marginBottom: "3px" }}>
+                {r.title}
+              </div>
+              <div style={{ fontSize: "0.82rem", color: MUTED, lineHeight: "1.5" }}>
+                {r.desc}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
-      {/* Minimum Wages */}
-      <div style={card}>
-        <div style={{ fontWeight: "700", marginBottom: "14px", fontSize: "0.95rem" }}>
-          💰 {t.wages_title || "Minimum wages 2025"}
-        </div>
-        {WAGES.map((w, i) => (
-          <div key={w.state} style={{
-            display: "flex", justifyContent: "space-between",
-            alignItems: "center", padding: "10px 0",
-            borderBottom: i < WAGES.length - 1 ? "1px solid #1f2937" : "none"
+      {/* Minimum wages */}
+      <div style={{
+        background: "#fff", border: `1px solid ${BORDER}`,
+        borderRadius: "16px", overflow: "hidden",
+        marginBottom: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      }}>
+        <div style={{ padding: "14px 20px", borderBottom: `1px solid ${BORDER}` }}>
+          <div style={{
+            fontSize: "0.72rem", fontWeight: "700",
+            textTransform: "uppercase", letterSpacing: "0.1em",
+            color: ORANGE,
           }}>
-            <span style={{ fontSize: "0.88rem", color: "#d1d5db" }}>
-              {w.flag} {w.state}
+            💰 {t.wages_title || "Minimum Wages 2025"}
+          </div>
+        </div>
+        {wages.map((w, i) => (
+          <div key={i} style={{
+            display: "flex", justifyContent: "space-between",
+            alignItems: "center", padding: "14px 20px",
+            borderBottom: i < wages.length - 1 ? `1px solid ${BORDER}` : "none",
+            background: i % 2 === 0 ? "#fff" : LIGHT,
+          }}>
+            <span style={{ fontSize: "0.92rem", fontWeight: "600", color: TEXT }}>
+              {w.state}
             </span>
-            <span style={{ color: "#f97316", fontWeight: "700" }}>
-              {w.amount}/hr
+            <span style={{
+              fontFamily: "monospace", fontWeight: "800",
+              fontSize: "0.95rem", color: ORANGE,
+            }}>
+              {w.wage}
             </span>
           </div>
         ))}
       </div>
 
-      {/* Report */}
+      {/* Report violation */}
       <div style={{
-        ...card,
-        background: "rgba(59,130,246,0.08)",
-        border: "1px solid rgba(59,130,246,0.3)"
+        background: "rgba(59,130,246,0.04)",
+        border: "1px solid rgba(59,130,246,0.2)",
+        borderRadius: "16px", padding: "20px",
+        marginBottom: "16px", textAlign: "center",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
       }}>
-        <div style={{ color: "#60a5fa", fontWeight: "700",
-                      fontSize: "0.85rem", textTransform: "uppercase",
-                      letterSpacing: "0.08em", marginBottom: "12px" }}>
-          📞 {t.report_title || "Report a violation"}
+        <div style={{
+          fontSize: "0.72rem", fontWeight: "700",
+          textTransform: "uppercase", letterSpacing: "0.1em",
+          color: "#2563eb", marginBottom: "10px",
+        }}>
+          📞 {t.report_title || "Report a Violation"}
         </div>
-        <div style={{ color: "#f97316", fontWeight: "800",
-                      fontSize: "1.8rem", marginBottom: "6px" }}>
+        <div style={{
+          fontFamily: "monospace", fontWeight: "800",
+          fontSize: "1.8rem", color: ORANGE, marginBottom: "6px",
+        }}>
           1-866-487-9243
         </div>
-        <div style={{ color: "#9ca3af", fontSize: "0.82rem" }}>
+        <div style={{ fontSize: "0.82rem", color: MUTED }}>
           {t.report_free || "Free · Bilingual · Regardless of immigration status"}
         </div>
       </div>
 
       {/* Privacy */}
-      <div style={card}>
-        <div style={{ fontWeight: "700", marginBottom: "12px" }}>
-          🔒 {t.privacy_title || "Your privacy in PaySnap"}
+      <div style={{
+        background: "#fff", border: `1px solid ${BORDER}`,
+        borderRadius: "16px", padding: "20px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      }}>
+        <div style={{
+          fontSize: "0.72rem", fontWeight: "700",
+          textTransform: "uppercase", letterSpacing: "0.1em",
+          color: ORANGE, marginBottom: "14px",
+        }}>
+          🔒 {t.privacy_title || "Your Privacy in PaySnap"}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {privacy.map((item, i) => (
-            <div key={i} style={{ display: "flex", gap: "10px",
-                                  fontSize: "0.85rem", color: "#d1d5db" }}>
-              <span style={{ color: "#4ade80" }}>✓</span>
-              <span>{item}</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {privacyItems.map((item, i) => (
+            <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+              <div style={{
+                width: "20px", height: "20px", borderRadius: "50%",
+                background: "rgba(34,197,94,0.1)",
+                display: "flex", alignItems: "center",
+                justifyContent: "center", flexShrink: 0, marginTop: "1px",
+              }}>
+                <span style={{ color: "#16a34a", fontSize: "0.7rem", fontWeight: "700" }}>✓</span>
+              </div>
+              <span style={{ fontSize: "0.88rem", color: TEXT, lineHeight: "1.5" }}>
+                {item}
+              </span>
             </div>
           ))}
         </div>

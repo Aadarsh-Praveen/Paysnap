@@ -108,8 +108,8 @@ model_routing:
 # ─────────────────────────────────────────────
 ollama:
   base_url: "http://localhost:11434"
-  vision_model: "gemma4:latest"
-  text_model: "gemma4:latest"
+  vision_model: "paysnap-vision"
+  text_model: "paysnap"
   timeout_seconds: 180
   max_tokens: 2048
 
