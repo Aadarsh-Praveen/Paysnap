@@ -1,11 +1,23 @@
 """
 backend/main.py
 FastAPI server for PaySnap.
-Uses our fine-tuned Gemma 4 via Ollama (local, offline).
+Uses fine-tuned Gemma 4 via Ollama (text) and llama.cpp (vision).
+
+Endpoints:
+  GET  /health
+  POST /extract           → Gemma 4 vision reads paystub image/PDF
+  POST /extract-text      → Gemma 4 understands natural language description
+  POST /analyze           → Deterministic math + Gemma 4 explanation
+  POST /analyze-agentic   → Gemma 4 native function calling (agentic)
+  POST /demand-letter     → Gemma 4 writes formal demand letter
+  POST /translate-ui      → Gemma 4 translates all UI strings
+  GET  /history           → Evidence vault
+  GET  /export            → Download evidence as .txt
+
 Run: uvicorn backend.main:app --reload --port 8000
 """
 
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 import shutil
@@ -19,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.core.input_handler import InputHandler, PaystubData, DeductionItem
 from app.analysis.violation_engine import ViolationEngine
 from app.model.gemma_client import GemmaClient
+from app.model.agentic_analyzer import analyze_paystub_agentic
 from app.output.evidence_vault import EvidenceVault
 
 app = FastAPI(title="PaySnap API", version="2.0.0")
@@ -36,19 +49,25 @@ engine  = ViolationEngine()
 gemma   = GemmaClient()
 vault   = EvidenceVault()
 
-# ─────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────
 # HEALTH
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "app": "PaySnap", "model": "paysnap (fine-tuned Gemma 4)"}
+    return {
+        "status": "ok",
+        "app":    "PaySnap",
+        "model":  "paysnap (fine-tuned Gemma 4 E2B)",
+        "mode":   "agentic + pipeline"
+    }
 
 
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # EXTRACT FROM FILE (image/PDF)
-# Gemma 4 vision reads the paystub
-# ─────────────────────────────────────────────
+# Gemma 4 vision reads the paystub via llama.cpp
+# ─────────────────────────────────────────────────────────────
 
 @app.post("/extract")
 async def extract_from_file(file: UploadFile = File(...)):
@@ -82,10 +101,10 @@ async def extract_from_file(file: UploadFile = File(...)):
             content={"success": False, "error": str(e)})
 
 
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # EXTRACT FROM TEXT / VOICE
-# Gemma 4 understands natural language in any language
-# ─────────────────────────────────────────────
+# Gemma 4 understands natural language descriptions in any language
+# ─────────────────────────────────────────────────────────────
 
 @app.post("/extract-text")
 async def extract_from_text(text: str = Form(...)):
@@ -144,10 +163,10 @@ JSON:"""
             content={"success": False, "error": str(e)})
 
 
-# ─────────────────────────────────────────────
-# ANALYZE PAYSTUB
-# Math is deterministic — Gemma only explains
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# ANALYZE (original pipeline)
+# Math is deterministic Python — Gemma 4 explains in worker's language
+# ─────────────────────────────────────────────────────────────
 
 @app.post("/analyze")
 async def analyze_paystub(
@@ -160,7 +179,6 @@ async def analyze_paystub(
     language:       str   = Form("en"),
 ):
     try:
-        # Parse deductions
         ded_list = []
         if deductions:
             try:
@@ -183,14 +201,14 @@ async def analyze_paystub(
         )
 
         use_state = state if state in ["TX","CA","NY","FL","IL"] else "TX"
-        report = engine.analyze(paystub, use_state)
+        report    = engine.analyze(paystub, use_state)
 
         # Gemma 4 explains in worker's language
         explanation = gemma.generate_explanation(report, language=language)
 
         vault.save_record(paystub, report)
 
-        # Build illegal deductions — translate reason to worker's language
+        # Build illegal deductions with translated reason
         illegal_deds = []
         for r in report.illegal_deductions:
             reason = r.reason_es
@@ -203,13 +221,13 @@ async def analyze_paystub(
                 except:
                     pass
             illegal_deds.append({
-                "name":    r.deduction.name,
-                "amount":  r.deduction.amount,
+                "name":      r.deduction.name,
+                "amount":    r.deduction.amount,
                 "reason_es": reason,
-                "statute": r.statute
+                "statute":   r.statute
             })
 
-        # Build legal aid — translate note to worker's language
+        # Build legal aid contacts
         legal_aid_note = "Free · Bilingual · Regardless of immigration status"
         if language not in ["es", "en"]:
             try:
@@ -224,7 +242,6 @@ async def analyze_paystub(
         legal_aid = []
         for c in report.legal_aid_contacts[:2]:
             contact = dict(c)
-            # Use English name for all languages
             if contact.get("organization_name_en"):
                 contact["organization_name_es"] = contact["organization_name_en"]
             elif contact.get("organization_name"):
@@ -256,10 +273,126 @@ async def analyze_paystub(
             content={"success": False, "error": str(e)})
 
 
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# ANALYZE AGENTIC (new — Gemma 4 native function calling)
+# Gemma 4 decides which tools to call based on paystub data.
+# This uses Gemma 4's native function calling capability,
+# making PaySnap a true agentic AI system.
+#
+# Tools available to Gemma 4:
+#   - calculate_overtime(hours, rate, state, ot_paid)
+#   - check_minimum_wage(rate, state, hours)
+#   - check_deductions(name, amount, state, rate, hours)
+#   - get_applicable_statutes(violation_type, state)
+#   - get_dol_contact(state, language)
+# ─────────────────────────────────────────────────────────────
+
+@app.post("/analyze-agentic")
+async def analyze_agentic(request: Request):
+    """
+    Agentic wage theft analysis using Gemma 4 native function calling.
+
+    Gemma 4 autonomously decides which tools to call based on what
+    it observes in the paystub — true agentic AI behavior.
+
+    Request body (JSON):
+    {
+        "paystub": {
+            "employer_name": "ABC Construction",
+            "regular_hours": 52,
+            "overtime_hours": 0,
+            "hourly_rate": 15.0,
+            "state": "TX",
+            "deductions": [{"name": "TOOLS", "amount": 75}]
+        },
+        "language": "en"
+    }
+    """
+    try:
+        body = await request.json()
+
+        # Accept both {paystub: {...}} and flat format
+        paystub_data = body.get("paystub", body)
+        language     = body.get("language", "en")
+
+        # Normalize field names
+        normalized = {
+            "employer_name":   paystub_data.get("employer_name",
+                               paystub_data.get("employer", "Unknown")),
+            "hours_worked":    float(paystub_data.get("hours_worked",
+                               paystub_data.get("regular_hours", 0)) or 0)
+                             + float(paystub_data.get("overtime_hours", 0) or 0),
+            "regular_hours":   float(paystub_data.get("regular_hours", 0) or 0),
+            "overtime_hours":  float(paystub_data.get("overtime_hours", 0) or 0),
+            "hourly_rate":     float(paystub_data.get("hourly_rate", 0) or 0),
+            "state":           paystub_data.get("state", "TX"),
+            "deductions":      paystub_data.get("deductions", []),
+        }
+
+        print(f"\n=== Agentic Analysis ===")
+        print(f"Language: {language}")
+        print(f"Hours: {normalized['hours_worked']} | "
+              f"Rate: ${normalized['hourly_rate']} | "
+              f"State: {normalized['state']}")
+        print(f"Deductions: {normalized['deductions']}")
+
+        # Run agentic analysis — Gemma 4 decides what to check
+        result = analyze_paystub_agentic(normalized, language)
+
+        print(f"Tool calls: {len(result['tool_calls_made'])}")
+        print(f"Violations: {len(result['violations'])}")
+        print(f"Total owed: ${result['total_owed']}")
+
+        # Also save to evidence vault
+        try:
+            ded_list = []
+            for d in normalized.get("deductions", []):
+                if isinstance(d, dict):
+                    ded_list.append(DeductionItem(
+                        name=str(d.get("name", "")),
+                        amount=float(d.get("amount", 0))
+                    ))
+            paystub_obj = PaystubData(
+                employer_name=normalized["employer_name"],
+                regular_hours=normalized["regular_hours"],
+                overtime_hours=normalized["overtime_hours"],
+                total_hours=normalized["hours_worked"],
+                hourly_rate=normalized["hourly_rate"],
+                gross_pay=normalized["regular_hours"] * normalized["hourly_rate"],
+                deductions=ded_list,
+                state=normalized["state"]
+            )
+            use_state = normalized["state"] if normalized["state"] in [
+                "TX","CA","NY","FL","IL"] else "TX"
+            report = engine.analyze(paystub_obj, use_state)
+            vault.save_record(paystub_obj, report)
+        except Exception as vault_err:
+            print(f"Vault save error (non-critical): {vault_err}")
+
+        return {
+            "success":         True,
+            "agentic":         True,
+            "model":           "paysnap (Gemma 4 E2B fine-tuned on 365,393 DOL cases)",
+            "violations":      result["violations"],
+            "total_owed":      result["total_owed"],
+            "explanation":     result["explanation"],
+            "statutes":        result["statutes"],
+            "dol_contact":     result["dol_contact"],
+            "tool_calls_made": result["tool_calls_made"],
+            "iterations":      result["iterations"],
+            "language":        language,
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────
 # DEMAND LETTER
-# Always in English — legal document for employer
-# ─────────────────────────────────────────────
+# Gemma 4 writes formal demand letter in English
+# ─────────────────────────────────────────────────────────────
 
 @app.post("/demand-letter")
 async def generate_demand_letter(
@@ -305,56 +438,10 @@ Letter:"""
             content={"success": False, "error": str(e)})
 
 
-# ─────────────────────────────────────────────
-# HISTORY
-# ─────────────────────────────────────────────
-
-@app.get("/history")
-def get_history(language: str = "en"):
-    try:
-        records = vault.get_all()
-        summary = vault.get_summary()
-        return {
-            "success": True,
-            "data": {
-                "records": records[:20],
-                "summary": summary
-            }
-        }
-    except Exception as e:
-        return JSONResponse(status_code=500,
-            content={"success": False, "error": str(e)})
-
-
-# ─────────────────────────────────────────────
-# EXPORT
-# ─────────────────────────────────────────────
-
-@app.get("/export")
-def export_evidence():
-    try:
-        text = vault.export_text()
-        tmp = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False,
-            encoding="utf-8", prefix="paysnap_evidence_"
-        )
-        tmp.write(text)
-        tmp.close()
-        return FileResponse(
-            tmp.name,
-            media_type="text/plain",
-            filename="paysnap_evidence.txt"
-        )
-    except Exception as e:
-        return JSONResponse(status_code=500,
-            content={"success": False, "error": str(e)})
-
-
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # TRANSLATE UI
-# Gemma 4 translates all UI strings
-# Batched to avoid timeout
-# ─────────────────────────────────────────────
+# Gemma 4 translates all 65 UI strings to worker's language
+# ─────────────────────────────────────────────────────────────
 
 @app.post("/translate-ui")
 async def translate_ui(
@@ -373,11 +460,11 @@ async def translate_ui(
             "step2": "Step 2",
             "step3": "Step 3",
 
-            # Input options — Ask PaySnap screen
+            # Input options
             "ask_paysnap":  "Ask PaySnap",
             "ask_sub":      "Upload, speak, or type — Gemma 4 does the rest",
             "speak_title":  "Speak your situation",
-            "speak_sub":    "Talk in Hindi, Spanish, or any language",
+            "speak_sub":    "Talk in any language",
             "describe_title": "Describe your situation",
             "describe_sub":   "I worked 52 hours at $23 per hour in Texas",
             "describe_hint":  "Type in your language. Gemma 4 extracts details automatically.",
@@ -472,8 +559,8 @@ async def translate_ui(
             return [dict(items[i:i+size]) for i in range(0, len(items), size)]
 
         def normalize_keys(result: dict, original_batch: dict) -> dict:
-            normalized = {}
-            result_lower = {k.lower().strip(): v for k, v in result.items()}
+            normalized    = {}
+            result_lower  = {k.lower().strip(): v for k, v in result.items()}
             for orig_key in original_batch.keys():
                 if orig_key in result:
                     normalized[orig_key] = result[orig_key]
@@ -496,14 +583,13 @@ async def translate_ui(
             batch_json = json.dumps(batch, ensure_ascii=False, indent=2)
             prompt = f"""You are a professional translator. Translate the JSON values below into {language_name}.
 
-RULES — follow exactly:
+RULES:
 1. Return ONLY a valid JSON object, nothing else
-2. Keep ALL keys exactly as they are — never change key names
+2. Keep ALL keys exactly as they are
 3. Translate only the string values
-4. Keep unchanged in values: PaySnap, Gemma 4, FLSA, PDF, Word, Excel, DOL
+4. Keep unchanged: PaySnap, Gemma 4, FLSA, PDF, DOL
 5. Keep $ signs and numbers unchanged
 6. No markdown, no explanation, no extra text
-7. Output must be parseable by json.loads()
 
 Input:
 {batch_json}
@@ -512,17 +598,14 @@ Input:
 
             response = gemma._call_text(prompt)
             clean = response.strip()
-
             if "```json" in clean:
                 clean = clean.split("```json")[1].split("```")[0].strip()
             elif "```" in clean:
                 clean = clean.split("```")[1].split("```")[0].strip()
-
             start = clean.find("{")
             end   = clean.rfind("}") + 1
             if start >= 0 and end > start:
                 clean = clean[start:end]
-
             result = json.loads(clean)
             return normalize_keys(result, batch)
 
@@ -540,7 +623,6 @@ Input:
                 translated.update(batch)
 
         print(f"✅ Translation complete: {len(translated)} strings")
-
         return {
             "success": True,
             "data": {
@@ -554,5 +636,50 @@ Input:
         print(f"Translation error: {e}")
         import traceback
         traceback.print_exc()
+        return JSONResponse(status_code=500,
+            content={"success": False, "error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────
+# HISTORY
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/history")
+def get_history(language: str = "en"):
+    try:
+        records = vault.get_all()
+        summary = vault.get_summary()
+        return {
+            "success": True,
+            "data": {
+                "records": records[:20],
+                "summary": summary
+            }
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500,
+            content={"success": False, "error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────
+# EXPORT
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/export")
+def export_evidence():
+    try:
+        text = vault.export_text()
+        tmp = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False,
+            encoding="utf-8", prefix="paysnap_evidence_"
+        )
+        tmp.write(text)
+        tmp.close()
+        return FileResponse(
+            tmp.name,
+            media_type="text/plain",
+            filename="paysnap_evidence.txt"
+        )
+    except Exception as e:
         return JSONResponse(status_code=500,
             content={"success": False, "error": str(e)})
