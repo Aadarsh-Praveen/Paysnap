@@ -120,13 +120,15 @@ Violation analysis (calculated by deterministic system):
 Legal aid phrase in {language_code}: "{legal_aid_phrase}"
 DOL phone: 1-866-487-9243
 
-Structure your response as:
-1. What violation was found (1-2 sentences)
-2. The math calculation showing exact dollar amount
-3. Which law applies (statute number)
-4. How to get help (DOL phone number)
+VERIFIED TOTAL OWED: ${total_owed} — USE THIS NUMBER ONLY. DO NOT RECALCULATE.
 
-Write explanation now:"""
+Structure your response:
+1. Violation found (1 sentence)
+2. Math from the "breakdown" field above (copy it)
+3. Statute cited
+4. Call {legal_aid_phrase} 1-866-487-9243
+
+The amount is ${total_owed}. Write explanation now:"""
 
 
 FOLLOWUP_PROMPT_ES = """Eres PaySnap, asistente de recibos de pago.

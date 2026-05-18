@@ -29,7 +29,7 @@ const LEGAL_AID = {
 };
 
 // ── Violation math (pure JS, deterministic) ──
-function calcViolations(regularHours, overtimeHours, hourlyRate, state, deductions) {
+function calcViolations(regularHours, overtimeHours, hourlyRate, state, deductions, grossPay) {
   const total     = regularHours + overtimeHours;
   const minWage   = MIN_WAGES[state]    || 7.25;
   const statute   = STATUTES[state]     || "FLSA 29 USC 207(a)(1)";
@@ -41,7 +41,17 @@ function calcViolations(regularHours, overtimeHours, hourlyRate, state, deductio
   if (total > 40 && overtimeHours < (total - 40)) {
     otHours = (total - 40) - overtimeHours;
     const otRate = hourlyRate * 0.5; // premium only — straight time already paid
-    otOwed = otHours * otRate;
+    otOwed = Math.round(otHours * otRate * 100) / 100;
+    // Gross pay check — prevents false positive when OT already included in gross
+    if (grossPay && parseFloat(grossPay) > 0) {
+      const gp = parseFloat(grossPay);
+      const expectedFull = (total * hourlyRate) + otOwed;
+      if (gp >= expectedFull - 0.01) {
+        otOwed = 0; otHours = 0; // Worker paid correctly
+      } else {
+        otOwed = Math.max(0, expectedFull - gp); // Actual shortfall
+      }
+    }
     breakdown =
       `Total hours:       ${total}\n` +
       `Rate:              $${hourlyRate.toFixed(2)}/hr (premium only)\n` +
@@ -214,11 +224,11 @@ export const api = {
   // Math: deterministic JS (no AI, always accurate)
   // Explanation: backend Gemma 4 in worker's language
   async analyze({ employer, regularHours, overtimeHours,
-                  hourlyRate, state, deductions, language, languageName }) {
+                  hourlyRate, state, deductions, language, languageName, grossPay }) {
 
     // Always run deterministic math first
     const calc = calcViolations(
-      regularHours, overtimeHours, hourlyRate, state, deductions
+      regularHours, overtimeHours, hourlyRate, state, deductions, grossPay
     );
 
     // Build summary for Gemma 4 to explain

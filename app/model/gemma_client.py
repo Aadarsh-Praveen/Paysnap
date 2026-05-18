@@ -90,7 +90,8 @@ class GemmaClient:
             state=violation_report.state,
             language_code=language,
             report_json=report_json,
-            legal_aid_phrase=legal_phrase
+            legal_aid_phrase=legal_phrase,
+            total_owed=f"{violation_report.total_money_owed:.2f}"
         )
         return self._call_text(prompt)
 

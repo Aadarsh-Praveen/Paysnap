@@ -61,6 +61,7 @@ export default function Analyze({ t, language, languageName }) {
   const [regularHours,  setRegularHours]  = useState("");
   const [overtimeHours, setOvertimeHours] = useState("0");
   const [hourlyRate,    setHourlyRate]    = useState("");
+  const [grossPay,      setGrossPay]      = useState("");
   const [state,         setState]         = useState("TX");
   const [deductions,    setDeductions]    = useState([]);
   const [dedName,       setDedName]       = useState("");
@@ -79,6 +80,7 @@ export default function Analyze({ t, language, languageName }) {
     if (data.regular_hours)  setRegularHours(String(data.regular_hours));
     if (data.overtime_hours) setOvertimeHours(String(data.overtime_hours));
     if (data.hourly_rate)    setHourlyRate(String(data.hourly_rate));
+    if (data.gross_pay)      setGrossPay(String(data.gross_pay));
     if (data.state)          setState(data.state);
     if (data.deductions?.length) setDeductions(data.deductions);
     setMode("form");
@@ -135,6 +137,7 @@ export default function Analyze({ t, language, languageName }) {
           state: d.state || "TX",
           deductions: d.deductions || [],
           language, languageName,
+          grossPay: d.gross_pay || 0,
         });
         if (analyzeRes.success) { setResult(analyzeRes.data); setStatusMsg(""); }
       } else { setMode("form"); setStatusMsg(""); }
@@ -155,6 +158,7 @@ export default function Analyze({ t, language, languageName }) {
         employer, regularHours: reg,
         overtimeHours: parseFloat(overtimeHours) || 0,
         hourlyRate: rate, state, deductions, language, languageName,
+        grossPay: parseFloat(grossPay) || 0,
       });
       if (res.success) { setResult(res.data); setStatusMsg(""); }
       else setError(res.error || "Analysis failed");
@@ -434,6 +438,11 @@ export default function Analyze({ t, language, languageName }) {
             <label style={labelStyle}>{t.rate || "Hourly Rate ($)"}</label>
             <input style={inputStyle} type="number" value={hourlyRate}
               onChange={e => setHourlyRate(e.target.value)} placeholder="15.00" min="0" step="0.01" />
+          </div>
+          <div>
+            <label style={labelStyle}>Gross Pay on Paystub (optional)</label>
+            <input style={inputStyle} type="number" value={grossPay}
+              onChange={e => setGrossPay(e.target.value)} placeholder="e.g. 760.00" min="0" step="0.01" />
           </div>
           <div>
             <label style={labelStyle}>{t.state_label || "State"}</label>
