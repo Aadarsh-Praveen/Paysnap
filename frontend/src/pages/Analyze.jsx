@@ -125,6 +125,18 @@ export default function Analyze({ t, language, languageName }) {
       const res = await api.extractFromText(text);
       if (res.success && res.data && (res.data.regular_hours > 0 || res.data.hourly_rate > 0)) {
         fillForm(res.data);
+        setMode("form");
+        const d = res.data;
+        const analyzeRes = await api.analyze({
+          employer: d.employer_name || "",
+          regularHours: d.regular_hours || 0,
+          overtimeHours: d.overtime_hours || 0,
+          hourlyRate: d.hourly_rate || 0,
+          state: d.state || "TX",
+          deductions: d.deductions || [],
+          language, languageName,
+        });
+        if (analyzeRes.success) { setResult(analyzeRes.data); setStatusMsg(""); }
       } else { setMode("form"); setStatusMsg(""); }
     } catch (e) { setMode("form"); setStatusMsg(""); }
     finally { setExtracting(false); }
