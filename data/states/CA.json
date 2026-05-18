@@ -5,10 +5,10 @@
   "last_verified": "2025-01-01",
   "source_url": "https://www.dir.ca.gov/dlse/faq_overtime.htm",
   "wages": {
-    "minimum_wage": 16.50,
+    "minimum_wage": 16.5,
     "minimum_wage_source": "California minimum wage effective January 1, 2025",
     "minimum_wage_statute": "CA Labor Code §1182.12",
-    "tipped_minimum": 16.50,
+    "tipped_minimum": 16.5,
     "note_es": "California: $16.50/hora mínimo (2025). No se permite reducción por propinas."
   },
   "overtime": {
@@ -23,15 +23,41 @@
   },
   "paystub": {
     "itemized_required": true,
-    "required_fields": ["gross_wages", "total_hours_worked", "all_deductions", "net_wages", "pay_period_dates", "employer_name", "employer_address"],
+    "required_fields": [
+      "gross_wages",
+      "total_hours_worked",
+      "all_deductions",
+      "net_wages",
+      "pay_period_dates",
+      "employer_name",
+      "employer_address"
+    ],
     "statute": "CA Labor Code §226",
     "penalty_per_violation": 50,
     "note_es": "California requiere recibos detallados. Si falta información = violación."
   },
   "deductions": {
-    "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment", "state_disability_insurance"],
-    "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
-    "never_allowed": ["tools", "uniforms", "business_expenses", "deductions_below_minimum_wage"],
+    "allowed_without_consent": [
+      "federal_taxes",
+      "state_taxes",
+      "social_security",
+      "medicare",
+      "court_ordered_garnishment",
+      "state_disability_insurance"
+    ],
+    "allowed_with_written_consent": [
+      "health_insurance",
+      "retirement_401k",
+      "union_dues"
+    ],
+    "never_allowed": [
+      "tools",
+      "uniforms",
+      "business_expenses",
+      "deductions_below_minimum_wage",
+      "breakage",
+      "cash_register_shortages"
+    ],
     "statute": "CA Labor Code §221-224",
     "note_es": "En California, el empleador NO puede cobrar por herramientas, uniformes o gastos de negocio."
   },

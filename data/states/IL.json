@@ -5,11 +5,11 @@
   "last_verified": "2025-01-01",
   "source_url": "https://labor.illinois.gov/labor-laws/minimum-wage-law",
   "wages": {
-    "minimum_wage": 14.00,
-    "minimum_wage_chicago": 16.20,
+    "minimum_wage": 14.0,
+    "minimum_wage_chicago": 16.2,
     "minimum_wage_source": "Illinois minimum wage effective January 1, 2025",
     "minimum_wage_statute": "820 ILCS 105/4",
-    "tipped_minimum": 8.40,
+    "tipped_minimum": 8.4,
     "note_es": "Illinois: $14.00/hora mínimo (2025). Chicago: $16.20/hora."
   },
   "overtime": {
@@ -22,14 +22,33 @@
   },
   "paystub": {
     "itemized_required": true,
-    "required_fields": ["hours_worked", "wages_paid", "deductions"],
+    "required_fields": [
+      "hours_worked",
+      "wages_paid",
+      "deductions"
+    ],
     "statute": "820 ILCS 115/10",
     "note_es": "Illinois requiere recibos con horas trabajadas, salario y deducciones."
   },
   "deductions": {
-    "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
-    "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
-    "never_allowed": ["tools", "uniforms", "cash_register_shortages", "breakage"],
+    "allowed_without_consent": [
+      "federal_taxes",
+      "state_taxes",
+      "social_security",
+      "medicare",
+      "court_ordered_garnishment"
+    ],
+    "allowed_with_written_consent": [
+      "health_insurance",
+      "retirement_401k",
+      "union_dues"
+    ],
+    "never_allowed": [
+      "tools",
+      "uniforms",
+      "cash_register_shortages",
+      "breakage"
+    ],
     "statute": "820 ILCS 115/9",
     "note_es": "En Illinois, deducciones por herramientas, uniformes o roturas son ilegales."
   },

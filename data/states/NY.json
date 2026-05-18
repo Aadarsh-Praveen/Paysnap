@@ -5,8 +5,8 @@
   "last_verified": "2025-01-01",
   "source_url": "https://dol.ny.gov/minimum-wage-0",
   "wages": {
-    "minimum_wage": 16.00,
-    "minimum_wage_nyc": 16.50,
+    "minimum_wage": 16.0,
+    "minimum_wage_nyc": 16.5,
     "minimum_wage_source": "NY minimum wage effective January 1, 2025",
     "minimum_wage_statute": "NY Labor Law §652",
     "tipped_minimum": 10.65,
@@ -22,15 +22,38 @@
   },
   "paystub": {
     "itemized_required": true,
-    "required_fields": ["rate_of_pay", "basis_of_pay", "net_wages", "deductions", "employer_name"],
+    "required_fields": [
+      "rate_of_pay",
+      "basis_of_pay",
+      "net_wages",
+      "deductions",
+      "employer_name"
+    ],
     "statute": "NY Labor Law §195",
     "penalty_per_violation": 250,
     "note_es": "Nueva York requiere recibos detallados. Multa de $250 por violación."
   },
   "deductions": {
-    "allowed_without_consent": ["federal_taxes", "state_taxes", "social_security", "medicare", "court_ordered_garnishment"],
-    "allowed_with_written_consent": ["health_insurance", "retirement_401k", "union_dues"],
-    "never_allowed": ["tools", "uniforms", "business_expenses"],
+    "allowed_without_consent": [
+      "federal_taxes",
+      "state_taxes",
+      "social_security",
+      "medicare",
+      "court_ordered_garnishment"
+    ],
+    "allowed_with_written_consent": [
+      "health_insurance",
+      "retirement_401k",
+      "union_dues"
+    ],
+    "never_allowed": [
+      "tools",
+      "uniforms",
+      "business_expenses",
+      "breakage",
+      "cash_register_shortages",
+      "meals"
+    ],
     "statute": "NY Labor Law §193",
     "note_es": "En Nueva York, deducciones por herramientas o uniformes son ilegales."
   },
