@@ -57,7 +57,7 @@ class OvertimeCalculator:
 
         ot_hours = max(0, weekly_hours - threshold)
         regular_hours = min(weekly_hours, threshold)
-        ot_rate = regular_rate * multiplier
+        ot_rate = regular_rate * (multiplier - 1.0)  # premium only — straight time already paid
         ot_pay = ot_hours * ot_rate
 
         double_time_hours = 0.0
@@ -90,7 +90,7 @@ class OvertimeCalculator:
             f"Rate: ${regular_rate:.2f}/hr\n"
             f"OT threshold ({state}): {threshold} hrs/week\n"
             f"OT hours owed: {ot_hours:.1f}\n"
-            f"OT rate: ${regular_rate:.2f} x {multiplier} = ${ot_rate:.2f}/hr\n"
+            f"OT rate: ${regular_rate:.2f} x 0.5 = ${ot_rate:.2f}/hr (premium only)\n"
             f"OT pay: {ot_hours:.1f} x ${ot_rate:.2f} = ${ot_pay:.2f}\n"
         )
         if double_time_hours > 0:
