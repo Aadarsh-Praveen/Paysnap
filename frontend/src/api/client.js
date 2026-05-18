@@ -40,15 +40,15 @@ function calcViolations(regularHours, overtimeHours, hourlyRate, state, deductio
 
   if (total > 40 && overtimeHours < (total - 40)) {
     otHours = (total - 40) - overtimeHours;
-    const otRate = hourlyRate * 1.5;
+    const otRate = hourlyRate * 0.5; // premium only — straight time already paid
     otOwed = otHours * otRate;
     breakdown =
       `Total hours:       ${total}\n` +
-      `Rate:              $${hourlyRate.toFixed(2)}/hr\n` +
+      `Rate:              $${hourlyRate.toFixed(2)}/hr (premium only)\n` +
       `OT threshold:      40 hrs/week\n` +
       `OT hours owed:     ${otHours.toFixed(1)}\n` +
-      `OT rate:           $${hourlyRate.toFixed(2)} × 1.5 = $${(hourlyRate*1.5).toFixed(2)}/hr\n` +
-      `OT pay:            ${otHours.toFixed(1)} × $${(hourlyRate*1.5).toFixed(2)} = $${otOwed.toFixed(2)}\n` +
+      `OT rate:           $${hourlyRate.toFixed(2)} × 0.5 = $${(hourlyRate*0.5).toFixed(2)}/hr (premium only)\n` +
+      `OT pay:            ${otHours.toFixed(1)} × $${(hourlyRate*0.5).toFixed(2)} = $${otOwed.toFixed(2)}\n` +
       `────────────────────────────────\n` +
       `TOTAL OWED:        $${otOwed.toFixed(2)}`;
   }
